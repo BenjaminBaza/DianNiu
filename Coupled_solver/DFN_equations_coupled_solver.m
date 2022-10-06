@@ -1,6 +1,7 @@
 % Following the method of Xia et al. 2017 and Zheng et al. 2013
 
 global sol_fun
+global BV_fun
 global ini
 global deb
 
@@ -10,21 +11,14 @@ current_source_p=-Current_intensity_temp/(p.coll_A_p*p.sig_eff_p);
 current_source_psBC=[current_source_n,current_source_p];
 
 
-temporary_j=0;
-if temporary_j==1
-    jn=5;%-5.35e-5; %DEBUG BEN temporary hard coded value for development purposes
-    jp=5;%-5.35e-5; %DEBUG BEN temporary hard coded value for development purposes
-    source_n=p.A_s_n*jn*ones(1,sol.nb_cell_n);
-    source_s=0*ones(1,sol.nb_cell_s);
-    source_p=p.A_s_p*jp*ones(1,sol.nb_cell_p);
-else
 
-    fv.j=butler_volmer_eq(fv.pe,fv.ps,fv.ce,fv.cse,p.k0,p.alpha,p.Faraday,p.Rg, ...
-                        ini.T0,fv.Ueq,p.Rfilm,p.csn_max,p.csp_max,sol.nb_cell_n,sol.nb_cell_s);
-    source_n=p.A_s_n*fv.j(1:sol.nb_cell_n);
-    source_s=0*ones(1,sol.nb_cell_s);
-    source_p=p.A_s_p*fv.j(sol.nb_cell_n+sol.nb_cell_s+1:sol.nb_cell);
-end
+fv.j=BV_fun.butler_volmer_equation(fv.pe,fv.ps,fv.ce,fv.cse,p.k0,p.alpha,p.Faraday,p.Rg, ...
+                    ini.T0,fv.Ueq,p.Rfilm,p.csn_max,p.csp_max,sol.nb_cell_n,sol.nb_cell_s);
+
+
+source_n=p.A_s_n*fv.j(1:sol.nb_cell_n);
+source_s=0*ones(1,sol.nb_cell_s);
+source_p=p.A_s_p*fv.j(sol.nb_cell_n+sol.nb_cell_s+1:sol.nb_cell);
 
 source_ce=cat(2,(1-p.t_plus)*source_n,source_s);
 source_ce=cat(2,source_ce,(1-p.t_plus)*source_p);
@@ -37,6 +31,22 @@ source_ps=cat(2,source_ps,-p.Faraday*source_p);
 
 source_csn=-fv.j(1:sol.nb_cell_n)/p.Dsn;
 source_csp=-fv.j(sol.nb_cell_n+sol.nb_cell_s+1:sol.nb_cell)/p.Dsp;
+
+disp("sources!!!!1111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111 ")
+disp(source_pe)
+disp(source_ps)
+disp(source_ce)
+disp(source_csn)
+disp(source_csp)
+
+[source_pe,source_ps,source_ce,source_csn,source_csp] = eq_build_fun.update_sources();
+disp("sources!!!!2222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222 ")
+disp(source_pe)
+disp(source_ps)
+disp(source_ce)
+disp(source_csn)
+disp(source_csp)
+disp("sources!!!!333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333 ")
 
 
 

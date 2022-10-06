@@ -1,5 +1,6 @@
 % Following the method of Xia et al. 2017
 
+global BV_fun
 
 if deb.prints==1
     disp('Solving diffusion in electrolyte');

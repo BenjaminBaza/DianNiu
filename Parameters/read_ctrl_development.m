@@ -4,6 +4,8 @@
 
 %reminders : in the case of a discharge cathode=positive electrode and anode=negative.
 
+global BV_fun
+
 %% Parameter functions class
 global param_functions
 param_functions=param_functions_LGM50;
@@ -45,7 +47,7 @@ global sol
 sol.coupling_scheme=1;
 
 sol.time_tot    = 50.;%10800;                     %Total time of the simulation [s]
-sol.dt          = 10;%1.                        %Time step for the time discretization [s]
+sol.dt          = 10.;%1.                        %Time step for the time discretization [s]
 sol.time_array  = sol.dt:sol.dt:sol.time_tot;  % array containing the time coordinate of each time step (may be redundant)
 sol.nb_steps    =length(sol.time_array);    % Number of time states visited throughout the simulation
 
@@ -93,7 +95,7 @@ sol.newton_relax_factor = 0.8;
 
 global deb
 
-deb.prints=2;
+deb.prints=3;
 deb.videos_generation=0;
 deb.plot_data=0;
 deb.animate_data=0;
@@ -218,8 +220,7 @@ ini.psp0 = param_functions.pos_electrode_Ueq(ini.csp0,0);      % Initial negativ
 fv.pe  = ini.pe0 * ones(sol.nb_cell,1);
 fv.ps  = cat(1,ini.psn0 * ones( sol.nb_cell_n , 1),ini.psp0 * ones( sol.nb_cell_p , 1));
 
-%fv.j=ones(1,sol.nb_cell);
-fv.j=butler_volmer_eq(fv.pe,fv.ps,fv.ce,fv.cse,p.k0,p.alpha,p.Faraday,p.Rg, ini.T0,fv.Ueq,p.Rfilm,p.csn_max,p.csp_max,sol.nb_cell_n,sol.nb_cell_s);
+fv.j=BV_fun.butler_volmer_equation(fv.pe,fv.ps,fv.ce,fv.cse,p.k0,p.alpha,p.Faraday,p.Rg, ini.T0,fv.Ueq,p.Rfilm,p.csn_max,p.csp_max,sol.nb_cell_n,sol.nb_cell_s);
 fv.V=0;
 
 if p.De_function_mode==1

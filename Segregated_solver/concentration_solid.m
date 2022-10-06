@@ -1,3 +1,5 @@
+global BV_fun
+
 if deb.prints==1
     disp('Solving diffusion in particles');
 end

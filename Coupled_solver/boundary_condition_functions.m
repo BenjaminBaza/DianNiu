@@ -75,7 +75,8 @@ classdef boundary_condition_functions
             elseif i==1
                 dxm=dx(i);dxc=dx(i);dxp=dx(i+1);
                 %pm=p(i)-source_BC(1)*dxc;pc=p(i);pp=p(i+1); % This boundary is correct but apparently redundant. 
-                pm=-p(i);pc=p(i);pp=p(i+1);   % DEBUG BEN This BC forces potential to 0 at x=0. Which appears to be correct (see Plett and Qiao).
+                pm=0;pc=p(i);pp=p(i+1); % This boundary is correct but apparently redundant. 
+                %pm=-p(i);pc=p(i);pp=p(i+1);   % DEBUG BEN This BC forces potential to 0 at x=0. Which appears to be correct (see Plett and Qiao).
                 Dm=D(i);Dc=D(i);Dp=D(i+1);
             elseif i==separator_index
                 dxm=dx(i-1);dxc=dx(i);dxp=dx(i);

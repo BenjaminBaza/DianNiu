@@ -258,5 +258,66 @@ classdef equation_building_functions
 
         end
 
+        function source = update_source_single_cell (obj,i,ID) 
+            global p
+            global sol
+            global fv
+            global ini
+            global param_functions
+
+            A_s=p.A_s_n;
+            Ds= p.Dsn;
+            if i>sol.nb_cell_n
+                A_s=p.A_s_p;
+                Ds= p.Dsp;
+            end
+
+            if ID=="ps"
+                source=-p.Faraday*A_s*fv.j(i);
+            elseif ID=="pe"
+                source= p.Faraday*A_s*fv.j(i);
+            elseif ID=="ce"
+                source= (1-p.t_plus)*A_s*fv.j(i);
+            elseif ID=="cs"
+                source= -fv.j(i)/Ds;
+            else
+                disp("ERROR update_source_single_cell : ID string is incorrect.")
+            end
+        end
+
+
+        function [source_pe,source_ps,source_ce,source_csn,source_csp] = update_sources (obj) 
+            global p
+            global sol
+            global fv
+            global ini
+            global param_functions
+
+            source_ps=zeros(1,sol.nb_cell-sol.nb_cell_s);
+            source_pe=zeros(1,sol.nb_cell);
+            source_ce=zeros(1,sol.nb_cell);
+            source_cs=zeros(1,sol.nb_cell);
+            
+
+            for i = 1:1:sol.nb_cell_n
+                source_ps(i)=obj.update_source_single_cell (i,"ps") ;
+                source_pe(i)=obj.update_source_single_cell (i,"pe") ;
+                source_ce(i)=obj.update_source_single_cell (i,"ce") ;
+                source_cs(i)=obj.update_source_single_cell (i,"cs") ;
+            end
+
+            for i = sol.nb_cell_n+sol.nb_cell_s+1:1:sol.nb_cell
+                source_ps(i-sol.nb_cell_s)=obj.update_source_single_cell (i,"ps") ;
+                source_pe(i)=obj.update_source_single_cell (i,"pe") ;
+                source_ce(i)=obj.update_source_single_cell (i,"ce") ;
+                source_cs(i)=obj.update_source_single_cell (i,"cs") ;
+            end
+
+            source_csn=source_cs(1:sol.nb_cell_n);
+            source_csp=source_cs(sol.nb_cell_n+sol.nb_cell_s+1:sol.nb_cell);
+
+        end
     end
 end
+
+

@@ -3,7 +3,7 @@ clc;
 clear;
 warning('off');
 
-cd('\\fil031.uis.no\emp05\2925477\Documents\Battery research\DFN_prototype')
+cd('\\fil031.uis.no\emp05\2925477\Documents\Battery research\DFN_DianNiu')
 
 addpath("Parameters")
 addpath("Coupled_solver")
@@ -19,6 +19,8 @@ global BC_fun
 BC_fun =		boundary_condition_functions;
 global eq_build_fun
 eq_build_fun =	equation_building_functions;
+global BV_fun
+BV_fun =  BV_functions;
 
 %%%%%%%%%%%%%%%%% Start timer
 main_timer=tic;

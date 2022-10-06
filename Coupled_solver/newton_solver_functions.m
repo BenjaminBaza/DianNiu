@@ -30,6 +30,8 @@ classdef newton_solver_functions
             global fv
             global ini
             global hist
+            global BV_fun
+
 
             norm_delta_coupled=0;
 
@@ -43,7 +45,7 @@ classdef newton_solver_functions
             % Resize solid concentration vecotrs (from a table of size (nb_cell_n+nb_cell_p,part_nb_cell) to (nb_cell_n+nb_cell_p)*part_nb_cell)
             
             %test_array=[1 5 9; 2 6 10 ; 3 7 11 ; 4 8 12];
-            %resized_test       = reshape(test_array,sol.nb_cell_n*(sol.part_nb_cell+1),1);
+            %resized_test     = reshape(test_array,sol.nb_cell_n*(sol.part_nb_cell+1),1);
             resized_csn       = reshape(csn,sol.nb_cell_n*(sol.part_nb_cell+1),1);
             resized_csn_next  = reshape(csn,sol.nb_cell_n*(sol.part_nb_cell+1),1);
             resized_csp       = reshape(csp,sol.nb_cell_p*(sol.part_nb_cell+1),1);
@@ -82,25 +84,45 @@ classdef newton_solver_functions
 
                 if sol.newton_update_sources==1
                     [De,kappa,p.kappa_D_eff] = eq_build_fun.update_param_functions(ce_next,cse_next);
-                    fv.j=butler_volmer_eq(pe_next,ps_next,ce_next,cse_next,p.k0,p.alpha,p.Faraday,p.Rg, ...
+                    fv.j=BV_fun.butler_volmer_equation(pe_next,ps_next,ce_next,cse_next,p.k0,p.alpha,p.Faraday,p.Rg, ...
                         ini.T0,fv.Ueq,p.Rfilm,p.csn_max,p.csp_max,sol.nb_cell_n,sol.nb_cell_s);
 
-                    source_n=p.A_s_n*fv.j(1:sol.nb_cell_n);
-                    source_s=0*ones(1,sol.nb_cell_s);
-                    source_p=p.A_s_p*fv.j(sol.nb_cell_n+sol.nb_cell_s+1:sol.nb_cell);
+                    switch_test_test=1;
+                    if switch_test_test==1
+                        [source_pe,source_ps,source_ce,source_csn,source_csp] = eq_build_fun.update_sources();
+                        disp("sources!!!!111111111111111111111111111111111111111111111111111111111111111111111111111111 ")
+                        disp(source_pe)
+                        disp(source_ps)
+                        disp(source_ce)
+                        disp(source_csn)
+                        disp(source_csp)
+                    end 
+                    if switch_test_test==1
 
-                    source_ce=cat(2,(1-p.t_plus)*source_n,source_s);
-                    source_ce=cat(2,source_ce,(1-p.t_plus)*source_p);
-                
-                    source_pe=cat(2,p.Faraday*source_n,source_s);
-                    source_pe=cat(2,source_pe,p.Faraday*source_p);
-                
-                    source_ps=-p.Faraday*source_n;
-                    source_ps=cat(2,source_ps,-p.Faraday*source_p);
-                
-                    source_csn=-fv.j(1:sol.nb_cell_n)/p.Dsn;
-                    source_csp=-fv.j(sol.nb_cell_n+sol.nb_cell_s+1:sol.nb_cell)/p.Dsp;
+                        source_n=p.A_s_n*fv.j(1:sol.nb_cell_n);
+                        source_s=0*ones(1,sol.nb_cell_s);
+                        source_p=p.A_s_p*fv.j(sol.nb_cell_n+sol.nb_cell_s+1:sol.nb_cell);
 
+                        source_ce=cat(2,(1-p.t_plus)*source_n,source_s);
+                        source_ce=cat(2,source_ce,(1-p.t_plus)*source_p);
+                   
+                        source_pe=cat(2,p.Faraday*source_n,source_s);
+                        source_pe=cat(2,source_pe,p.Faraday*source_p);
+                   
+                        source_ps=-p.Faraday*source_n;
+                        source_ps=cat(2,source_ps,-p.Faraday*source_p);
+                   
+                        source_csn=-fv.j(1:sol.nb_cell_n)/p.Dsn;
+                        source_csp=-fv.j(sol.nb_cell_n+sol.nb_cell_s+1:sol.nb_cell)/p.Dsp;
+                        disp("sources!!!!2222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222 ")
+                        disp(source_pe)
+                        disp(source_ps)
+                        disp(source_ce)
+                        disp(source_csn)
+                        disp(source_csp)
+                        disp("sources!!!!333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333 ")
+
+                    end
                 end
 
                 %%Calculate the jacobian matrix of the left hand side vector for the concentration at time t+dt: Jf(c)
@@ -163,9 +185,6 @@ classdef newton_solver_functions
                 gc=M*(ce_next-ce)/dt - 0.5*(f_ce_next+f_ce);
                 Jac_gc=M/dt -0.5*Jac_f_ce_next;
 
-                disp(M*(ce_next-ce)/dt - 0.5*(f_ce_next+f_ce))
-                disp(f_ce_next)
-                disp(f_ce)
 
                 %Solve electric potential in electrolyte
                 gp = f_pe_next;
@@ -257,7 +276,6 @@ classdef newton_solver_functions
                     disp(source_ps)
                     disp(transpose(ps_next))
                     disp((Jac_gps))
-                    disp((Jac_gps(3,3)))
                     disp(transpose(delta_coupled(sol.nb_cell_n*lenr+sol.nb_cell_p*lenr+len+len+1 : sol.nb_cell_n*lenr+sol.nb_cell_p*lenr+len+len+len_ps)))
                     
 
