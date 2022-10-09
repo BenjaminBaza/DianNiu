@@ -97,7 +97,7 @@ global deb
 
 deb.prints=3;
 deb.videos_generation=0;
-deb.plot_data=0;
+deb.plot_data=1;
 deb.animate_data=0;
 deb.safe_BC_mode=0;
 deb.break_time_loop=0;
@@ -208,9 +208,6 @@ fv.Ueq = 0.*ones(sol.nb_cell,1); % Open-circuit potential [V]
 if p.kappa_function_mode==1
 	fv.Ueq(1:sol.nb_cell_n) = param_functions.neg_electrode_Ueq(ini.csn0,0)* ones(sol.nb_cell_n,1);
 	fv.Ueq(sol.nb_cell_n+sol.nb_cell_s+1:sol.nb_cell) = param_functions.pos_electrode_Ueq(ini.csp0,0)* ones(sol.nb_cell_p,1);
-	if deb.prints>2
-		disp(fv.Ueq)
-	end
 end
 
 ini.pe0 = 0.;      % Initial electrolyte electric potential, [V]
@@ -220,7 +217,7 @@ ini.psp0 = param_functions.pos_electrode_Ueq(ini.csp0,0);      % Initial negativ
 fv.pe  = ini.pe0 * ones(sol.nb_cell,1);
 fv.ps  = cat(1,ini.psn0 * ones( sol.nb_cell_n , 1),ini.psp0 * ones( sol.nb_cell_p , 1));
 
-fv.j=BV_fun.butler_volmer_equation(fv.pe,fv.ps,fv.ce,fv.cse,p.k0,p.alpha,p.Faraday,p.Rg, ini.T0,fv.Ueq,p.Rfilm,p.csn_max,p.csp_max,sol.nb_cell_n,sol.nb_cell_s);
+fv.j=BV_fun.butler_volmer_equation(fv.pe,fv.ps,fv.ce,fv.cse, ini.T0,fv.Ueq,"read_ctrl");
 fv.V=0;
 
 if p.De_function_mode==1

@@ -19,47 +19,49 @@ classdef BV_functions
 	
 
 
-		function j= butler_volmer_equation(obj,pe,ps,ce,cse,k0,alpha,F,R,T,Ueq,Rfilm,csnmax,cspmax,neg_nb,sep_nb)
+		function j= butler_volmer_equation(obj,pe,ps,ce,cse,T,Ueq,ID)
 			global deb
+			global p
+			global sol
 			nu=1;
 			maxnu=10^6;
 			len=length(ce);
 			j=zeros(1,len);
 
 			for i = 1:1:len
-				if i<=neg_nb
+				if i<=sol.nb_cell_n
 					cseloc=cse(i);
 					indloc=i;
 
-					[j(i),nu,i0]=obj.butler_volmer_singlecell(pe(i),ps(indloc),ce(i),cseloc,k0(1),alpha,F,R,T,Ueq(i),Rfilm,csnmax);
+					[j(i),nu,i0]=obj.butler_volmer_singlecell(pe(i),ps(indloc),ce(i),cseloc,p.k0(1),p.alpha,p.Faraday,p.Rg,T,Ueq(i),p.Rfilm,p.csn_max);
 
-				elseif i<=neg_nb+sep_nb
+				elseif i<=sol.nb_cell_n+sol.nb_cell_s
 					j(i)=0;
 		        else
-		        	cseloc=cse(i-sep_nb);
-		        	indloc=i-sep_nb;
+		        	cseloc=cse(i-sol.nb_cell_s);
+		        	indloc=i-sol.nb_cell_s;
 
-		        	[j(i),nu,i0]=obj.butler_volmer_singlecell(pe(i),ps(indloc),ce(i),cseloc,k0(2),alpha,F,R,T,Ueq(i),Rfilm,cspmax);
+		        	[j(i),nu,i0]=obj.butler_volmer_singlecell(pe(i),ps(indloc),ce(i),cseloc,p.k0(2),p.alpha,p.Faraday,p.Rg,T,Ueq(i),p.Rfilm,p.csp_max);
 
 					if deb.prints>=2 & isreal(j(i))==0
 						disp("DEBUG BEN BV equation")
-						disp(num2str(i0)+"   "+num2str(nu)+"   "+num2str(j(i))+"   "+num2str(- exp((-alpha)*F*nu/(R*T)))+"   "+num2str(exp((1-alpha)*F*nu/(R*T))));
-						disp(num2str(ps(i-sep_nb))+"   "+num2str(-pe(i))+"   "+num2str(-Ueq(i)));
-						disp(num2str(ce(i))+"   "+num2str(cspmax-cse(i-sep_nb))+"   "+num2str(cse(i-sep_nb)));
+						disp(num2str(i0)+"   "+num2str(nu)+"   "+num2str(j(i))+"   "+num2str(- exp((-p.alpha)*p.Faraday*nu/(p.Rg*T)))+"   "+num2str(exp((1-p.alpha)*p.Faraday*nu/(p.Rg*T))));
+						disp(num2str(ps(i-sol.nb_cell_s))+"   "+num2str(-pe(i))+"   "+num2str(-Ueq(i)));
+						disp(num2str(ce(i))+"   "+num2str(csp_max-cse(i-sol.nb_cell_s))+"   "+num2str(cse(i-sol.nb_cell_s)));
 					end
 				end
 
-				if i>neg_nb+sep_nb || i<=neg_nb
-					if abs(j(i))>10^10 | isnan(j(i))==1 | deb.prints>=3
-						disp("DEBUG BEN BV eq")
-						disp(num2str(i)+"  "+num2str(nu)+"  "+num2str(j(i))+"  "+num2str((exp((1-alpha)*F*nu/(R*T)) - exp((-alpha)*F*nu/(R*T)))) ...
-							+"  "+num2str((exp((1-alpha)*F*nu/(R*T)) ))+"  "+num2str((-exp((-alpha)*F*nu/(R*T))))+"   "+ ...
-							num2str((exp((1-alpha)*F*(3*10^1)/(R*T)) - exp((-alpha)*F*(3*10^1)/(R*T))))+"   "+ ...
-							num2str((exp((1-alpha)*F*(-3*10^1)/(R*T)) - exp((-alpha)*F*(-3*10^1)/(R*T)))))
+				if i>sol.nb_cell_n+sol.nb_cell_s || i<=sol.nb_cell_n
+					if (abs(j(i))>10^10 | isnan(j(i))==1) && deb.prints>=5 && not(ID=="LHS_Jac_f_Fdiff_ps")
+						disp("DEBUG BEN BV eq ID="+ID)
+						disp(num2str(i)+"  "+num2str(nu)+"  "+num2str(j(i))+"  "+num2str((exp((1-p.alpha)*p.Faraday*nu/(p.Rg*T)) - exp((-p.alpha)*p.Faraday*nu/(p.Rg*T)))) ...
+							+"  "+num2str((exp((1-p.alpha)*p.Faraday*nu/(p.Rg*T)) ))+"  "+num2str((-exp((-p.alpha)*p.Faraday*nu/(p.Rg*T))))+"   "+ ...
+							num2str((exp((1-p.alpha)*p.Faraday*(3*10^1)/(p.Rg*T)) - exp((-p.alpha)*p.Faraday*(3*10^1)/(p.Rg*T))))+"   "+ ...
+							num2str((exp((1-p.alpha)*p.Faraday*(-3*10^1)/(p.Rg*T)) - exp((-p.alpha)*p.Faraday*(-3*10^1)/(p.Rg*T)))))
 
-						disp(num2str((1-alpha)*F/(R*T))+"  "+num2str((R*T))+"  "+num2str((1-alpha)*nu*F/(R*T)))
+						disp(num2str((1-p.alpha)*p.Faraday/(p.Rg*T))+"  "+num2str((p.Rg*T))+"  "+num2str((1-p.alpha)*nu*p.Faraday/(p.Rg*T)))
 
-						disp(num2str(i)+"  "+num2str(i0)+"   "+num2str(ce(i)^(1-alpha))+"   "+num2str(ce(i))+"   "+ num2str((cspmax-cseloc)^(1-alpha)*cseloc^alpha)+"  "+num2str(k0)+"  "+num2str(F))
+						disp(num2str(i)+"  "+num2str(i0)+"   "+num2str(ce(i)^(1-p.alpha))+"   "+num2str(ce(i))+"   "+ num2str((p.csp_max-cseloc)^(1-p.alpha)*cseloc^p.alpha)+"  "+num2str(p.k0)+"  "+num2str(p.Faraday))
 
 						disp(num2str(i)+"  "+num2str(nu)+"  "+num2str(Ueq(i))+"  "+num2str(ps(indloc))+"  "+num2str(pe(i)))
 
@@ -72,12 +74,8 @@ classdef BV_functions
 						end
 					end
 				end
-				
 			end
-
 		end
-
 	end
-
 
 end

@@ -21,7 +21,7 @@ classdef newton_solver_functions
                                                                 De,kappa, sigma,dx,source_ce,...
                                                                 source_csn,source_csp,source_pe,source_ps,current_source_psBC,...
                                                                 ce,separator_index,newt_max_ite,M,dt,...
-                                                                newt_lim,Jac_method,relax_factor,ite)
+                                                                newt_lim,Jac_method,relax_factor,time_ite)
             % Declare global variables
             global sol
             global eq_build_fun
@@ -71,7 +71,7 @@ classdef newton_solver_functions
             f_csn= eq_build_fun.LHS_f_cs(resized_csn,Dsn,rn,source_csn);
             f_csp= eq_build_fun.LHS_f_cs(resized_csp,Dsp,rp,source_csp);
             f_ce = eq_build_fun.LHS_f_ce(ce,De,dx,source_ce,"f_ce");
-            f_ps = eq_build_fun.LHS_f_ps(fv.ps,ce,sigma,dx,source_ps,separator_index,current_source_psBC,"f_ps");
+            f_ps = eq_build_fun.LHS_f_ps(fv.ps,ce,sigma,dx,source_ps,separator_index,current_source_psBC,"f_ps",0);
             f_pe = eq_build_fun.LHS_f_pe(fv.pe,ce,kappa,p.kappa_D_eff,dx,source_pe,"f_pe");
 
             ce_next_save= ones(length(ce_next),newt_max_ite);
@@ -84,56 +84,29 @@ classdef newton_solver_functions
 
                 if sol.newton_update_sources==1
                     [De,kappa,p.kappa_D_eff] = eq_build_fun.update_param_functions(ce_next,cse_next);
-                    fv.j=BV_fun.butler_volmer_equation(pe_next,ps_next,ce_next,cse_next,p.k0,p.alpha,p.Faraday,p.Rg, ...
-                        ini.T0,fv.Ueq,p.Rfilm,p.csn_max,p.csp_max,sol.nb_cell_n,sol.nb_cell_s);
+                    fv.j=BV_fun.butler_volmer_equation(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,"newton_solver_functions next ite");
 
-                    switch_test_test=1;
-                    if switch_test_test==1
-                        [source_pe,source_ps,source_ce,source_csn,source_csp] = eq_build_fun.update_sources();
-                        disp("sources!!!!111111111111111111111111111111111111111111111111111111111111111111111111111111 ")
-                        disp(source_pe)
-                        disp(source_ps)
-                        disp(source_ce)
-                        disp(source_csn)
-                        disp(source_csp)
-                    end 
-                    if switch_test_test==1
-
-                        source_n=p.A_s_n*fv.j(1:sol.nb_cell_n);
-                        source_s=0*ones(1,sol.nb_cell_s);
-                        source_p=p.A_s_p*fv.j(sol.nb_cell_n+sol.nb_cell_s+1:sol.nb_cell);
-
-                        source_ce=cat(2,(1-p.t_plus)*source_n,source_s);
-                        source_ce=cat(2,source_ce,(1-p.t_plus)*source_p);
                    
-                        source_pe=cat(2,p.Faraday*source_n,source_s);
-                        source_pe=cat(2,source_pe,p.Faraday*source_p);
-                   
-                        source_ps=-p.Faraday*source_n;
-                        source_ps=cat(2,source_ps,-p.Faraday*source_p);
-                   
-                        source_csn=-fv.j(1:sol.nb_cell_n)/p.Dsn;
-                        source_csp=-fv.j(sol.nb_cell_n+sol.nb_cell_s+1:sol.nb_cell)/p.Dsp;
-                        disp("sources!!!!2222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222 ")
-                        disp(source_pe)
-                        disp(source_ps)
-                        disp(source_ce)
-                        disp(source_csn)
-                        disp(source_csp)
-                        disp("sources!!!!333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333 ")
-
-                    end
+                    [source_pe,source_ps,source_ce,source_csn,source_csp] = eq_build_fun.update_sources();
+                    
                 end
 
                 %%Calculate the jacobian matrix of the left hand side vector for the concentration at time t+dt: Jf(c)
                 %if method=1, jacobian is calculated analytically, if method=2, jac
                 %is calculated using finite differences.
                 if Jac_method==1
-                    Jac_f_ce_next = eq_build_fun.LHS_Jac_f_Fdiff_ce(ce_next,De,dx,source_ce);
-                    Jac_f_pe_next = eq_build_fun.LHS_Jac_f_Fdiff_pe(pe_next,ce_next,kappa,p.kappa_D_eff,dx,source_pe);
-                    Jac_f_ps_next = eq_build_fun.LHS_Jac_f_Fdiff_ps(ps_next,ce_next,sigma,dx,source_ps,separator_index,current_source_psBC);
-                    Jac_f_csn_next= eq_build_fun.LHS_Jac_f_Fdiff_cs(resized_csn_next,Dsn,rn,source_csn);
-                    Jac_f_csp_next= eq_build_fun.LHS_Jac_f_Fdiff_cs(resized_csp_next,Dsp,rp,source_csp);
+                    %Jac_f_ce_next = eq_build_fun.LHS_Jac_f_Fdiff_ce(ce_next,De,dx,source_ce);
+                    %Jac_f_pe_next = eq_build_fun.LHS_Jac_f_Fdiff_pe(pe_next,ce_next,kappa,p.kappa_D_eff,dx,source_pe);
+                    %Jac_f_ps_next = eq_build_fun.LHS_Jac_f_Fdiff_ps(ps_next,ce_next,sigma,dx,source_ps,separator_index,current_source_psBC);
+                    %Jac_f_csn_next= eq_build_fun.LHS_Jac_f_Fdiff_cs(resized_csn_next,Dsn,rn,source_csn);
+                    %Jac_f_csp_next= eq_build_fun.LHS_Jac_f_Fdiff_cs(resized_csp_next,Dsp,rp,source_csp);
+
+                    Jac_f_ce_next = eq_build_fun.LHS_Jac_f_Fdiff_ce(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,De,dx,source_ce);
+                    Jac_f_pe_next = eq_build_fun.LHS_Jac_f_Fdiff_pe(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,kappa,p.kappa_D_eff,dx,source_pe);
+                    Jac_f_ps_next = eq_build_fun.LHS_Jac_f_Fdiff_ps(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,sigma,dx,source_ps,separator_index,current_source_psBC);
+                    Jac_f_csn_next= eq_build_fun.LHS_Jac_f_Fdiff_cs(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,resized_csn_next,Dsn,rn,source_csn);
+                    Jac_f_csp_next= eq_build_fun.LHS_Jac_f_Fdiff_cs(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,resized_csp_next,Dsp,rp,source_csp);
+
 
 
                     if (1==1 |det(Jac_f_pe_next)==0)
@@ -165,7 +138,7 @@ classdef newton_solver_functions
 
                 f_ce_next       = eq_build_fun.LHS_f_ce(ce_next,De,dx,source_ce,"f_ce_next");
                 f_pe_next       = eq_build_fun.LHS_f_pe(pe_next,ce_next,kappa,p.kappa_D_eff,dx,source_pe,"f_pe_next");
-                f_ps_next       = eq_build_fun.LHS_f_ps(ps_next,ce_next,sigma,dx,source_ps,separator_index,current_source_psBC,"f_ps_next");
+                f_ps_next       = eq_build_fun.LHS_f_ps(ps_next,ce_next,sigma,dx,source_ps,separator_index,current_source_psBC,"f_ps_next",0);
                 f_csn_next      = eq_build_fun.LHS_f_cs(resized_csn_next,Dsn,rn,source_csn);
                 f_csp_next      = eq_build_fun.LHS_f_cs(resized_csp_next,Dsp,rp,source_csp);
                 
@@ -239,13 +212,13 @@ classdef newton_solver_functions
                 if deb.prints>=2
                     
 
-                    disp("DEBUG BEN j ------------------------------")
+                    disp("DEBUG BEN j ------------------------------ newt_ite="+num2str(newt_ite)+" , time ite="+num2str(time_ite))
                     disp((fv.j))
                     pe_next_reduced = cat(1,pe_next(1:sol.nb_cell_n),pe_next(sol.nb_cell_n+sol.nb_cell_s+1:sol.nb_cell));
                     disp(transpose(ps_next-pe_next_reduced))
 
 
-                    disp("DEBUG BEN cs")
+                    disp("DEBUG BEN cs newt_ite="+num2str(newt_ite)+" , time ite="+num2str(time_ite))
 
                     disp(transpose(gcsn))
                     disp(transpose(resized_csn_next))
@@ -253,25 +226,25 @@ classdef newton_solver_functions
                     %disp((Jac_gcsn))
                     disp(transpose(delta_coupled(1 : sol.nb_cell_n*lenr)))
                     disp(transpose(delta_coupled(sol.nb_cell_n*lenr+1:sol.nb_cell_n*lenr+sol.nb_cell_p*lenr)))
-                    disp(source_csn)
-                    disp(source_csp)
-                    disp(p.A_s_n)
+                    %disp(source_csn)
+                    %disp(source_csp)
+                    %disp(p.A_s_n)
 
-                    disp("DEBUG BEN ce")
+                    disp("DEBUG BEN ce newt_ite="+num2str(newt_ite)+" , time ite="+num2str(time_ite))
                     disp(transpose(gc))
                     disp(transpose(ce_next))
                     disp((Jac_gc))
                     disp(transpose(delta_coupled(sol.nb_cell_n*lenr+sol.nb_cell_p*lenr+1 : sol.nb_cell_n*lenr+sol.nb_cell_p*lenr+len)))
 
 
-                    disp("DEBUG BEN pe")
+                    disp("DEBUG BEN pe newt_ite="+num2str(newt_ite)+" , time ite="+num2str(time_ite))
 
                     disp(transpose(gp))
                     disp(transpose(pe_next))
                     disp((Jac_gp))
                     disp(transpose(delta_coupled(sol.nb_cell_n*lenr+sol.nb_cell_p*lenr+len+1 : sol.nb_cell_n*lenr+sol.nb_cell_p*lenr+len+len)))
                     
-                    disp("DEBUG BEN ps")
+                    disp("DEBUG BEN ps newt_ite="+num2str(newt_ite)+" , time ite="+num2str(time_ite))
                     disp(transpose(gps))
                     disp(source_ps)
                     disp(transpose(ps_next))
@@ -371,13 +344,15 @@ classdef newton_solver_functions
 
                 %if (-(log10(max(hist.residuals(1,:)))-log10(hist.residuals(1,newt_ite)))<log10(newt_lim)) && newt_ite>1
                 %if (-(log10(max(hist.residuals(1,:)))-log10(min(hist.residuals(1,1:newt_ite))))<log10(newt_lim)) && newt_ite>1
-                if norm_delta_coupled<newt_lim || ((-(log10(max(hist.residuals(1,:)))-log10(min(hist.residuals(1,1:newt_ite))))<log10(newt_lim)-1) && newt_ite>1)
+                %if (norm_delta_coupled<newt_lim || (-(log10(max(hist.residuals(1,:)))-log10(min(hist.residuals(1,1:newt_ite))))<log10(newt_lim)-1)) && newt_ite>1
+                if (norm_delta_coupled<newt_lim) && newt_ite>1
                     
                     if deb.prints>=0
                         disp("Newton method for lithium concentration in electrlyte has converged:"+num2str(newt_ite)+" , "+num2str(norm_delta_coupled) ...
                                                                             +" , "+num2str(norm_delta_ps)+" , "+num2str(norm_delta_pe) ...
                                                                             +" , "+num2str(norm_delta_ce)+" , "+num2str(norm_delta_csn)+" , "+num2str(norm_delta_csp) ...
-                                                                            +" , "+num2str(-(log10(max(hist.residuals(1,:)))-log10(min(hist.residuals(1,1:newt_ite))))))
+                                                                            +" , "+num2str(-(log10(max(hist.residuals(1,:)))-log10(min(hist.residuals(1,1:newt_ite))))) ...
+                                                                            +" , "+num2str(max(hist.residuals(1,:))) +" , "+num2str(min(hist.residuals(1,1:newt_ite))))
                     end
                     break
                 elseif newt_ite==newt_max_ite
@@ -393,21 +368,21 @@ classdef newton_solver_functions
             end
 
             if deb.prints>=0
-                hist.residuals_time(1,ite)=norm_delta_coupled;
-                hist.residuals_time(2,ite)=norm_delta_ps;
-                hist.residuals_time(3,ite)=norm_delta_pe;
-                hist.residuals_time(4,ite)=norm_delta_ce;
-                hist.residuals_time(5,ite)=norm_delta_csn;
-                hist.residuals_time(6,ite)=norm_delta_csp;
-                hist.newt_it_number(1,ite)=newt_ite;
+                hist.residuals_time(1,time_ite)=norm_delta_coupled;
+                hist.residuals_time(2,time_ite)=norm_delta_ps;
+                hist.residuals_time(3,time_ite)=norm_delta_pe;
+                hist.residuals_time(4,time_ite)=norm_delta_ce;
+                hist.residuals_time(5,time_ite)=norm_delta_csn;
+                hist.residuals_time(6,time_ite)=norm_delta_csp;
+                hist.newt_it_number(1,time_ite)=newt_ite;
 
                 if isnan(norm_delta_coupled)==0
-                    hist.residuals_diff(1,ite)=-(log10(max(hist.residuals(1,:)))-log10(hist.residuals(1,newt_ite)));
-                    hist.residuals_diff(2,ite)=-(log10(max(hist.residuals(2,:)))-log10(hist.residuals(2,newt_ite)));
-                    hist.residuals_diff(3,ite)=-(log10(max(hist.residuals(3,:)))-log10(hist.residuals(3,newt_ite)));
-                    hist.residuals_diff(4,ite)=-(log10(max(hist.residuals(4,:)))-log10(hist.residuals(4,newt_ite)));
-                    hist.residuals_diff(5,ite)=-(log10(max(hist.residuals(5,:)))-log10(hist.residuals(5,newt_ite)));
-                    hist.residuals_diff(6,ite)=-(log10(max(hist.residuals(6,:)))-log10(hist.residuals(6,newt_ite)));
+                    hist.residuals_diff(1,time_ite)=-(log10(max(hist.residuals(1,:)))-log10(hist.residuals(1,newt_ite)));
+                    hist.residuals_diff(2,time_ite)=-(log10(max(hist.residuals(2,:)))-log10(hist.residuals(2,newt_ite)));
+                    hist.residuals_diff(3,time_ite)=-(log10(max(hist.residuals(3,:)))-log10(hist.residuals(3,newt_ite)));
+                    hist.residuals_diff(4,time_ite)=-(log10(max(hist.residuals(4,:)))-log10(hist.residuals(4,newt_ite)));
+                    hist.residuals_diff(5,time_ite)=-(log10(max(hist.residuals(5,:)))-log10(hist.residuals(5,newt_ite)));
+                    hist.residuals_diff(6,time_ite)=-(log10(max(hist.residuals(6,:)))-log10(hist.residuals(6,newt_ite)));
                 end
             end
 

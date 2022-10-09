@@ -218,7 +218,7 @@ ini.psp0 = param_functions.pos_electrode_Ueq(ini.csp0,0);      % Initial negativ
 fv.pe  = ini.pe0 * ones(sol.nb_cell,1);
 fv.ps  = cat(1,ini.psn0 * ones( sol.nb_cell_n , 1),ini.psp0 * ones( sol.nb_cell_p , 1));
 
-fv.j=BV_fun.butler_volmer_equation(fv.pe,fv.ps,fv.ce,fv.cse,p.k0,p.alpha,p.Faraday,p.Rg, ini.T0,fv.Ueq,p.Rfilm,p.csn_max,p.csp_max,sol.nb_cell_n,sol.nb_cell_s);
+fv.j=BV_fun.butler_volmer_equation(fv.pe,fv.ps,fv.ce,fv.cse, ini.T0,fv.Ueq,"read_ctrl");
 fv.V=0;
 
 if p.De_function_mode==1
