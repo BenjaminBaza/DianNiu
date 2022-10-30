@@ -1,5 +1,9 @@
+
 %% Reset matlab
 clc;
+
+
+
 clear;
 warning('off');
 
@@ -9,18 +13,23 @@ addpath("Parameters")
 addpath("Coupled_solver")
 addpath("Segregated_solver")
 addpath("Coupled_solver")
+load patients.mat
+
 
 %%%%%%%%%%%%%%%%% Set up global functions classes
 global sol_fun
-sol_fun = 		newton_solver_functions;
+sol_fun =       newton_solver_functions;
 global vis_fun
-vis_fun =		visual_functions;
+vis_fun =       visual_functions;
 global BC_fun
-BC_fun =		boundary_condition_functions;
+BC_fun =        boundary_condition_functions;
 global eq_build_fun
-eq_build_fun =	equation_building_functions;
+eq_build_fun =  equation_building_functions;
 global BV_fun
-BV_fun =  BV_functions;
+BV_fun =        BV_functions;
+
+%disp(vis_fun.logarithmic_ticks_generator(0.000002,100000))
+
 
 %%%%%%%%%%%%%%%%% Start timer
 main_timer=tic;
@@ -46,19 +55,19 @@ plot_timer=tic;
 
 if deb.plot_data==1
     disp('Ploting results')
-    vis_fun.plot_data(sol.cell_center_coord,fv.pe,'x','Potential','Potential in electrolyte',10,'pe.pdf')
-    vis_fun.plot_data(sol.cell_center_coord,fv.ce,'x','Concentration','Li concentration in electrolyte',10,'ce.pdf')
-    vis_fun.plot_data_solid(sol.cell_center_coord,fv.ps,'x','Potential','Potential in solid',10,'ps.pdf',sol.nb_cell_n,sol.nb_cell_s,sol.nb_cell_p)
-    vis_fun.plot_data_solid(sol.cell_center_coord,fv.cse,'x','Concentration','Li concentration in solid',10,'cse.pdf',sol.nb_cell_n,sol.nb_cell_s,sol.nb_cell_p)
-    vis_fun.plot_data(sol.cell_center_coord,fv.j,'x','j','Rate of charge flow throught solid particle surface',10,'j.pdf')
-    vis_fun.plot_data(sol.time_array,hist.V,'time (s)','Voltage (V)','Cell voltage over time',10,'V.pdf')
-    vis_fun.plot_complete_data('complete_field_values.png',sol.cell_center_coord,2,sol.nb_cell_n,sol.nb_cell_s,sol.nb_cell_p,sol.time_array);
-    vis_fun.plot_solid_concentration_data('solid_c_values.png',sol.cell_center_coord,2,sol.nb_cell_n,sol.nb_cell_s,sol.nb_cell_p,sol.time_array);
-    vis_fun.plot_solid_concentration_singlePart_data('solid_c_singlePart_values.png',sol.cell_center_coord,2,sol.nb_cell_n,sol.nb_cell_s,sol.nb_cell_p,sol.time_array);
+    %vis_fun.plot_data(sol.cell_center_coord,fv.pe,'x','Potential','Potential in electrolyte',10,'pe.pdf')
+    %vis_fun.plot_data(sol.cell_center_coord,fv.ce,'x','Concentration','Li concentration in electrolyte',10,'ce.pdf')
+    %vis_fun.plot_data_solid(sol.cell_center_coord,fv.ps,'x','Potential','Potential in solid',10,'ps.pdf',sol.nb_cell_n,sol.nb_cell_s,sol.nb_cell_p)
+    %vis_fun.plot_data_solid(sol.cell_center_coord,fv.cse,'x','Concentration','Li concentration in solid',10,'cse.pdf',sol.nb_cell_n,sol.nb_cell_s,sol.nb_cell_p)
+    %vis_fun.plot_data(sol.cell_center_coord,fv.j,'x','j','Rate of charge flow throught solid particle surface',10,'j.pdf')
+    %vis_fun.plot_data(sol.time_array,hist.V,'time (s)','Voltage (V)','Cell voltage over time',10,'V.pdf')
+    vis_fun.plot_complete_data('complete_field_values.png',sol.cell_center_coord,2,sol.nb_cell_n,sol.nb_cell_s,sol.nb_cell_p,sol.time_array,time_ite);
+    vis_fun.plot_solid_concentration_data('solid_c_values.png',sol.cell_center_coord,2,sol.nb_cell_n,sol.nb_cell_s,sol.nb_cell_p,sol.time_array,time_ite);
+    vis_fun.plot_solid_concentration_singlePart_data('solid_c_singlePart_values.png',sol.cell_center_coord,2,sol.nb_cell_n,sol.nb_cell_s,sol.nb_cell_p,sol.time_array,time_ite);
     
     if deb.prints>=0
-        vis_fun.plot_resuduals_DFN('DFN_res.png');
-        vis_fun.plot_resuduals_diff('Diff_res.png');
+        vis_fun.plot_resuduals_DFN('DFN_res.png',time_ite);
+        vis_fun.plot_resuduals_diff('Diff_res.png',time_ite);
         vis_fun.plot_resuduals_newt('Newt_res.png');
     end    
 end
@@ -77,3 +86,5 @@ video_chrono=toc(video_timer);
 chrono = toc(main_timer);
 fprintf(1,'End of simulation \nThe full program takes %3.2f sec, \nread section %3.2f sec, \nsolver section %3.2f sec, \nplot section %3.2f sec, \nvideo section %3.2f sec,\n' ...
                                             ,chrono,read_chrono,solver_chrono,plot_chrono,video_chrono);
+
+clear video_chrono video_timer main_timer read_chrono read_timer solver_chrono solver_timer

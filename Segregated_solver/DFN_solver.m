@@ -1,11 +1,15 @@
 disp('Solver starts')
 
-ite=0;
+time_ite=0;
+
+%% Start Newton solver ite timer
+newt_timer=tic;
+newt_chrono=0;
+
 %%start time stepping
 for time=sol.time_array
-    ite=ite+1;
+    time_ite=time_ite+1;
 
-    disp("DFN_solver iteration "+int2str(ite)+" at time "+num2str(time)+" sec")
 
     if sol.coupling_scheme==0
         %% Solve concentration in the solid particles.
@@ -25,13 +29,18 @@ for time=sol.time_array
     end
 
     %% Calculate voltage at time t
-    fv.V=voltage_calc(fv.ps,p.R_collector_contact ,ex.I_array(ite));
+    [fv.V,fv.SOC_neg,fv.SOC_pos]=voltage_calc(fv.ps,p.R_collector_contact ,ex.I_array(time_ite));
+
+    newt_ite_chrono= toc(newt_timer)-newt_chrono;
+    disp("DFN_solver ite "+int2str(time_ite)+" at time "+num2str(time)+"s converged in "+num2str(newt_ite)+"ite "+num2str(newt_ite_chrono)+"s  voltage="+num2str(fv.V)+"V  SOCn="+num2str(fv.SOC_neg)+"  SOCp="+num2str(fv.SOC_pos))
+    newt_chrono=toc(newt_timer);
+
 
     %% Add field variables to history records for later animation and output data
-    save_fv_to_hist(ite)
+    save_fv_to_hist(time_ite)
     
 end
 
-clear time ite;
+clear time ;
 
 disp('Solver ends');

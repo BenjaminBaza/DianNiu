@@ -7,7 +7,7 @@ classdef boundary_condition_functions
             if i_rcell==lenr
                 rm=r(i_rcell-1);    rc=r(i_rcell);  rp=r(lenr)+ r(lenr) -r(lenr-1);
                 cm=c(i-1);          cc=c(i);        cp=cc + source*(r(lenr)-r(lenr-1));
-                %disp("DEBUG BEN solid BC "+num2str(cc)+"  "+num2str(cp)+"  "+num2str(source)+"  "+num2str(r(lenr)-r(lenr-1)))
+                %disp("DEBUG BEN solid BC "+num2str(cc)+"  "+num2str(cp)+"  "+num2str(source)+"  "+num2str(r(lenr)-r(lenr-1))+"  "+num2str(source*(r(lenr)-r(lenr-1))))
             elseif i_rcell==1
                 rm=-r(i_rcell+1);   rc=r(i_rcell);  rp=r(i_rcell+1);
                 cm=c(i+1);          cc=c(i);        cp=c(i+1);

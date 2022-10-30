@@ -5,14 +5,12 @@ global BV_fun
 global ini
 global deb
 
-Current_intensity_temp=0.0001;
-current_source_n=-Current_intensity_temp/(p.coll_A_n*p.sig_eff_n);
-current_source_p=-Current_intensity_temp/(p.coll_A_p*p.sig_eff_p);
+current_source_n=-ex.I_array(1)/(p.coll_A_n*p.sig_eff_n);
+current_source_p=-ex.I_array(1)/(p.coll_A_p*p.sig_eff_p);
 current_source_psBC=[current_source_n,current_source_p];
 
 
-
-fv.j=BV_fun.butler_volmer_equation(fv.pe,fv.ps,fv.ce,fv.cse,ini.T0,fv.Ueq,"DFN_equations_soupled_solver original");
+fv.j=BV_fun.butler_volmer_equation(fv.pe,fv.ps,fv.ce,fv.cse,ini.T0,fv.Ueq,"DFN_equations_coupled_solver original");
 
 
 [source_pe,source_ps,source_ce,source_csn,source_csp] = eq_build_fun.update_sources();
@@ -20,8 +18,8 @@ fv.j=BV_fun.butler_volmer_equation(fv.pe,fv.ps,fv.ce,fv.cse,ini.T0,fv.Ueq,"DFN_e
 
 
 
-if deb.prints>1
-    disp("DEBUG BEN j and sources for ps, pe and ce")
+if deb.prints>3
+    disp("DEBUG BEN DFN_equations_coupled_solver j and sources for ps, pe and ce")
     disp(fv.j)
     disp(source_pe)
     disp(source_ps)
@@ -79,17 +77,18 @@ csp_next=fv.csp;
 %%Calculate the left hand side vector for the concentration at time t: f(c) and solve the system
 
 segregation=0;
-[ce_next,ce_next_save,pe_next,pe_next_save,ps_next,ps_next_save,csn_next,csp_next,rms] = ...
+[ce_next,ce_next_save,pe_next,pe_next_save,ps_next,ps_next_save,csn_next,csp_next,rms,newt_ite] = ...
                                         sol_fun.Newton_solver_coupled(  csn_next,csp_next,p.Dsn,p.Dsp,sol.part_coord_n,...
                                                                         sol.part_coord_p,fv.j, fv.csn,fv.csp,fv.cse,...
                                                                         Mn_part_diff,Mp_part_diff,ce_next,pe_next,ps_next,...
                                                                         p.De_eff,p.kappa_eff,p.sig_eff,sol.cell_dx,source_ce, ...
                                                                         source_csn, source_csp,source_pe,source_ps,current_source_psBC,...
                                                                         fv.ce,sol.nb_cell_n,sol.newton_meth_max_ite,M_electrlyte_diff,sol.dt, ...
-                                                                        sol.newton_meth_res_threshold,1,sol.newton_relax_factor,ite);
+                                                                        sol.newton_meth_res_threshold,1,sol.newton_relax_factor,time_ite);
 
 if isnan(rms)~=0 | isreal(rms) == 0
     deb.break_time_loop=1;
+    time_ite=time_ite-1;
 end
 
 fv.ce=ce_next;

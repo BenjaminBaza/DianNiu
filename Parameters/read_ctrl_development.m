@@ -36,7 +36,7 @@ p.eps_f_p = 0.;  % negative electrode volume fraction of filler
 % Specific interfacial surface area
 p.coll_A_n = 0.1027; % negative electrode current collector area [m^2]
 p.coll_A_p = 0.1027; % positive electrode current collector area [m^2]
-p.R_collector_contact=0;
+p.R_collector_contact=0;	%current collector total contact resistance [V.A^(-1)] [Ohm]
 p.A_s_n = 3*p.eps_s_n / p.R_s_n;  % Negative electrode specific interfacial surface area [m^2/m^3]
 p.A_s_p = 3*p.eps_s_p / p.R_s_p;  % Positive electrode specific interfacial surface area [m^2/m^3]
 
@@ -46,17 +46,17 @@ global sol
 
 sol.coupling_scheme=1;
 
-sol.time_tot    = 50.;%10800;                     %Total time of the simulation [s]
-sol.dt          = 10.;%1.                        %Time step for the time discretization [s]
+sol.time_tot    = 3600.0; %10800;                     %Total time of the simulation [s]
+sol.dt          = 5.;%1.                        %Time step for the time discretization [s]
 sol.time_array  = sol.dt:sol.dt:sol.time_tot;  % array containing the time coordinate of each time step (may be redundant)
 sol.nb_steps    =length(sol.time_array);    % Number of time states visited throughout the simulation
 
 sol.max_allowed_voltage = 4.40 ; %[V] (Not used in the solver at the moment)
 sol.min_allowed_voltage = 2.0 ; %[V] (Not used in the solver at the moment)
 
-sol.nb_cell_n   = 5;%30;%50;
+sol.nb_cell_n   = 10;%30;%50;
 sol.nb_cell_s   = 3;%20;%50;
-sol.nb_cell_p   = 5;%30;%50;
+sol.nb_cell_p   = 10;%30;%50;
 sol.nb_cell     = sol.nb_cell_n + sol.nb_cell_s + sol.nb_cell_p ;   %
 
 sol.dxn         = p.Ln/sol.nb_cell_n;
@@ -81,13 +81,13 @@ sol.cell_dx  = cat(1,sol.cell_dx,sol.dxp*ones(sol.nb_cell_p,1));
 sol.cell_center_coord_solid  = cat(1,sol.cell_center_coord(1:sol.nb_cell_n),sol.cell_center_coord(sol.nb_cell_n+sol.nb_cell_s+1:sol.nb_cell_n+sol.nb_cell_s+sol.nb_cell_p));
 
 
-sol.part_nb_cell= 10;%20;
+sol.part_nb_cell= 20;%20;
 sol.dxsn        = p.R_s_n/(sol.part_nb_cell);
 sol.dxsp        = p.R_s_p/(sol.part_nb_cell);
 sol.part_coord_n  = 0:sol.dxsn:p.R_s_n;
 sol.part_coord_p  = 0:sol.dxsp:p.R_s_p;
-sol.newton_meth_res_threshold=1e-2;
-sol.newton_meth_max_ite=500;
+sol.newton_meth_res_threshold=1e-6	;
+sol.newton_meth_max_ite=200;
 sol.newton_update_sources= 1;
 sol.newton_relax_factor = 0.8;
 
@@ -95,7 +95,7 @@ sol.newton_relax_factor = 0.8;
 
 global deb
 
-deb.prints=3;
+deb.prints=0;
 deb.videos_generation=0;
 deb.plot_data=1;
 deb.animate_data=0;
@@ -132,14 +132,22 @@ p.Rfilm	= 0 ;			% Film layer ionic resistance [Ohm.m^2]
 
 
 % Maximum concentrations
-temp_c_factor=1.;
-p.csn_max = 33133.0* temp_c_factor; % 3.6e3 * 372 * 1800 / p.Faraday;   % Max concentration in anode, [mol/m^3]
-p.csp_max = 63104.0* temp_c_factor; % 3.6e3 * 247 * 5010 / p.Faraday;    % Max concentration in cathode, [mol/m^3]
+p.csn_max = 33133.0;    % Max concentration in anode, [mol/m^3]
+p.csp_max = 63104.0;    % Max concentration in cathode, [mol/m^3]
+p.neg_stoichiometry_min = 0.0279;	% concentration at   0% stochiometry in anode, [mol/m^3]
+p.neg_stoichiometry_max = 0.9014;	% concentration at 100% stochiometry in anode, [mol/m^3]
+p.pos_stoichiometry_min = 0.2661;	% concentration at 100% stochiometry in cathode, [mol/m^3]
+p.pos_stoichiometry_max = 0.9084;	% concentration at   0% stochiometry in cathode, [mol/m^3]
+
+p.csn_stoic_min = p.csn_max*p.neg_stoichiometry_min;   % concentration at 100% stochiometry in anode, [mol/m^3]
+p.csp_stoic_min = p.csp_max*p.pos_stoichiometry_min;   % concentration at   0% stochiometry in cathode, [mol/m^3]
+p.csn_stoic_max = p.csn_max*p.neg_stoichiometry_max;   % concentration at   0% stochiometry in anode, [mol/m^3]
+p.csp_stoic_max = p.csp_max*p.pos_stoichiometry_max;   % concentration at 100% stochiometry in cathode, [mol/m^3]
 
 
 % Solid phase diffusion coefficients
-p.Dsn = 3.3e-4; %3.9e-14;  % neg. electrode diffusion coeff [m^2/s]
-p.Dsp = 4.0e-5; %1e-13;  % pos. electrode diffusion coeff [m^2/s]
+p.Dsn = 3.3e-14; %3.9e-14;  % neg. electrode diffusion coeff [m^2/s]
+p.Dsp = 4.0e-15; %1e-13;  % pos. electrode diffusion coeff [m^2/s]
 
 
 % Electrolyte diffusion coefficient
@@ -167,7 +175,7 @@ p.sig_eff  = cat(1,p.sig_eff,p.sig_eff_p*ones(sol.nb_cell_p,1));
 
 %% External input
 ex.temporary_Crate = 100000   ;                      % 
-ex.I_array  = 0.5 * ones(size(sol.time_array));%ex.temporary_Crate*ones(size(sol.time_array));  % Array containing the input current intensity at each time step (may be redundant)
+ex.I_array  = 10.000 * ones(size(sol.time_array));% 0.5 * ones(size(sol.time_array));%ex.temporary_Crate*ones(size(sol.time_array));  % Array containing the input current intensity at each time step (may be redundant)
 
 
 %% Initial conditions
@@ -176,9 +184,10 @@ ini.V0 = 4.0;       % Initial tension [V]
 %ini.ce0 = 1e3;      % Initial electrolyte concentration of Li, [mol/m^3]
 %ini.csp0 = 16792.0;% 3.45e4;  % Initial pos. electrode concentration of Li, [mol/m^3]
 %ini.csn0 = 29866.1;%1.29e4;  % Initial neg. electrode concentration of Li, [mol/m^3]
-ini.ce0 = 1000 * temp_c_factor;      % Initial electrolyte concentration of Li, [mol/m^3]
-ini.csp0 =  3.45e4 * temp_c_factor;  % Initial pos. electrode concentration of Li, [mol/m^3]
-ini.csn0 =  1.29e4 * temp_c_factor;  % Initial neg. electrode concentration of Li, [mol/m^3]
+ini.ce0 = 1000 ;      % Initial electrolyte concentration of Li, [mol/m^3]
+ini.SOC = 1.;
+ini.csp0 = p.csp_stoic_min+ (p.csp_stoic_max-p.csp_stoic_min)*(1-ini.SOC) ; %3.45e4 ;  % Initial pos. electrode concentration of Li, [mol/m^3]
+ini.csn0 = p.csn_stoic_min+ (p.csn_stoic_max-p.csn_stoic_min)*(  ini.SOC) ; %1.29e4 ;  % Initial neg. electrode concentration of Li, [mol/m^3]
 ini.T0 = 298.15;%1e3;       % Initial temperature, [K]
 
 
@@ -211,14 +220,54 @@ if p.kappa_function_mode==1
 end
 
 ini.pe0 = 0.;      % Initial electrolyte electric potential, [V]
-ini.psn0 = param_functions.neg_electrode_Ueq(ini.csn0,0);      % Initial positive electrode electric potential, [V]
-ini.psp0 = param_functions.pos_electrode_Ueq(ini.csp0,0);      % Initial negative electrode electric potential, [V]
+ini.psn0 = param_functions.neg_electrode_Ueq(ini.csn0,0);      % Initial positive electrode electric potential equal to the equilibrium potential, [V]
+ini.psp0 = param_functions.pos_electrode_Ueq(ini.csp0,0);      % Initial negative electrode electric potential equal to the equilibrium potential, [V]
+
+if deb.prints>1
+	figure(268989898);
+    fs = 16;
+    set(gcf,'Position',[50 50 1800 1000]);     
+
+    subplot(2,5,[1,2])
+    plot(0:p.csn_max/50.:p.csn_max,param_functions.neg_electrode_Ueq(0:p.csn_max/50.:p.csn_max),'LineWidth',2);
+    title('neg Ueq','fontsize',fs);
+    grid on
+    grid minor
+
+
+    subplot(2,5,[4,5])
+    plot(0:p.csp_max/50.:p.csp_max,param_functions.pos_electrode_Ueq(0:p.csp_max/50.:p.csp_max),'LineWidth',2);
+    title('pos Ueq','fontsize',fs);
+    grid on
+    grid minor
+
+    c_array=0:p.csp_max/50.:p.csp_max;
+    for c_ind=1:length(c_array)
+    	cond_array(c_ind)=param_functions.electrolyte_conductivity(c_array(c_ind));
+    	diff_array(c_ind)=param_functions.electrolyte_diffusivity(c_array(c_ind));
+    end
+
+    subplot(2,5,[6,7])
+    plot(c_array,cond_array,'LineWidth',2);
+    title('neg Ueq','fontsize',fs);
+    grid on
+    grid minor
+
+
+    subplot(2,5,[9,10])
+    plot(c_array,diff_array,'LineWidth',2);
+    title('pos Ueq','fontsize',fs);
+    grid on
+    grid minor
+end
 
 fv.pe  = ini.pe0 * ones(sol.nb_cell,1);
 fv.ps  = cat(1,ini.psn0 * ones( sol.nb_cell_n , 1),ini.psp0 * ones( sol.nb_cell_p , 1));
 
 fv.j=BV_fun.butler_volmer_equation(fv.pe,fv.ps,fv.ce,fv.cse, ini.T0,fv.Ueq,"read_ctrl");
 fv.V=0;
+fv.SOC_neg=0;
+fv.SOC_pos=0;
 
 if p.De_function_mode==1
 	p.De_eff = param_functions.electrolyte_diffusivity(ini.ce0) *ones(sol.nb_cell,1);
@@ -244,6 +293,8 @@ hist.ps  = zeros(length(fv.ps),sol.nb_steps+1);
 hist.Ueq = zeros(length(fv.Ueq),sol.nb_steps+1);
 hist.j   = zeros(length(fv.j),sol.nb_steps+1);
 hist.V   = zeros(1,sol.nb_steps);
+hist.SOC_neg   = zeros(1,sol.nb_steps);
+hist.SOC_pos   = zeros(1,sol.nb_steps);
 
 hist.csn(:,1) = reshape(fv.csn,sol.nb_cell_n*(sol.part_nb_cell+1),1);
 hist.csp(:,1) = reshape(fv.csp,sol.nb_cell_p*(sol.part_nb_cell+1),1);
@@ -257,6 +308,8 @@ hist.residuals   		= zeros(6,sol.newton_meth_max_ite);
 hist.residuals_time		= zeros(6,sol.nb_steps);
 hist.residuals_diff		= zeros(6,sol.nb_steps);
 hist.newt_it_number		= zeros(1,sol.nb_steps);
+hist.delta_coupled		= zeros(1,(sol.nb_cell_n+sol.nb_cell_p)*(sol.part_nb_cell+1)+3*sol.nb_cell-sol.nb_cell_s);
 
 
 
+clear diff_array cond_array c_array;

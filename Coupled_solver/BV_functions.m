@@ -10,6 +10,10 @@ classdef BV_functions
 			j=zeros(1,len);
 
 			cseloc=cse;
+			%cseloc=min(cse, csmax);
+			if cse>csmax
+				disp("DEBUG BEN BV eq cse>csmax "+num2str(cse)+"  "+num2str(csmax))
+			end
 			
 			i0=F*k0*ce^(1-alpha)*(csmax-cseloc)^(1-alpha)*cseloc^alpha;
 			nu=ps-pe-Ueq; %Could add the ionic resistance of the film layer (+F*Rfilm*j(i)) and iterate to find the combined vaues of nu and j
@@ -44,15 +48,15 @@ classdef BV_functions
 		        	[j(i),nu,i0]=obj.butler_volmer_singlecell(pe(i),ps(indloc),ce(i),cseloc,p.k0(2),p.alpha,p.Faraday,p.Rg,T,Ueq(i),p.Rfilm,p.csp_max);
 
 					if deb.prints>=2 & isreal(j(i))==0
-						disp("DEBUG BEN BV equation")
+						disp("DEBUG BEN BV equation cell "+num2str(i)+" ID="+ID)
 						disp(num2str(i0)+"   "+num2str(nu)+"   "+num2str(j(i))+"   "+num2str(- exp((-p.alpha)*p.Faraday*nu/(p.Rg*T)))+"   "+num2str(exp((1-p.alpha)*p.Faraday*nu/(p.Rg*T))));
 						disp(num2str(ps(i-sol.nb_cell_s))+"   "+num2str(-pe(i))+"   "+num2str(-Ueq(i)));
-						disp(num2str(ce(i))+"   "+num2str(csp_max-cse(i-sol.nb_cell_s))+"   "+num2str(cse(i-sol.nb_cell_s)));
+						disp(num2str(ce(i))+"   "+num2str(p.csp_max-cse(i-sol.nb_cell_s))+"   "+num2str(cse(i-sol.nb_cell_s)));
 					end
 				end
 
 				if i>sol.nb_cell_n+sol.nb_cell_s || i<=sol.nb_cell_n
-					if (abs(j(i))>10^10 | isnan(j(i))==1) && deb.prints>=5 && not(ID=="LHS_Jac_f_Fdiff_ps")
+					if ((abs(j(i))>10^10 || isnan(j(i))==1 || deb.prints>=5 )&& not(contains(ID,"LHS_Jac_")))
 						disp("DEBUG BEN BV eq ID="+ID)
 						disp(num2str(i)+"  "+num2str(nu)+"  "+num2str(j(i))+"  "+num2str((exp((1-p.alpha)*p.Faraday*nu/(p.Rg*T)) - exp((-p.alpha)*p.Faraday*nu/(p.Rg*T)))) ...
 							+"  "+num2str((exp((1-p.alpha)*p.Faraday*nu/(p.Rg*T)) ))+"  "+num2str((-exp((-p.alpha)*p.Faraday*nu/(p.Rg*T))))+"   "+ ...
@@ -66,8 +70,10 @@ classdef BV_functions
 						disp(num2str(i)+"  "+num2str(nu)+"  "+num2str(Ueq(i))+"  "+num2str(ps(indloc))+"  "+num2str(pe(i)))
 
 						disp(transpose(Ueq))
-						disp(transpose(ps))
 						disp(transpose(pe))
+						disp(transpose(ps))
+						disp(transpose(ce))
+						disp((cse))
 
 						if abs(j(i))>10^10
 							j(i)=10^10;

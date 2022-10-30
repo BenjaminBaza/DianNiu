@@ -14,7 +14,7 @@ classdef newton_solver_functions
             M=M1*M2;
         end
 
-        function [ce_next,ce_next_save,pe_next,pe_next_save,ps_next,ps_next_save,csn_next,csp_next,norm_delta_coupled] = ...
+        function [ce_next,ce_next_save,pe_next,pe_next_save,ps_next,ps_next_save,csn_next,csp_next,norm_delta_coupled,newt_ite] = ...
                                             Newton_solver_coupled(obj,csn_next,csp_next,Dsn,Dsp,rn,...
                                                                 rp,j,csn,csp,cse, ...
                                                                 Mn,Mp,ce_next,pe_next,ps_next,...
@@ -81,58 +81,74 @@ classdef newton_solver_functions
             for newt_ite = 1:1:newt_max_ite
 
                 %Update parameter functions and Butler-Volmer equation
-
                 if sol.newton_update_sources==1
                     [De,kappa,p.kappa_D_eff] = eq_build_fun.update_param_functions(ce_next,cse_next);
                     fv.j=BV_fun.butler_volmer_equation(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,"newton_solver_functions next ite");
-
-                   
                     [source_pe,source_ps,source_ce,source_csn,source_csp] = eq_build_fun.update_sources();
-                    
                 end
 
                 %%Calculate the jacobian matrix of the left hand side vector for the concentration at time t+dt: Jf(c)
-                %if method=1, jacobian is calculated analytically, if method=2, jac
+                %if method=2, jacobian is calculated analytically, if method=1, jac
                 %is calculated using finite differences.
                 if Jac_method==1
-                    %Jac_f_ce_next = eq_build_fun.LHS_Jac_f_Fdiff_ce(ce_next,De,dx,source_ce);
-                    %Jac_f_pe_next = eq_build_fun.LHS_Jac_f_Fdiff_pe(pe_next,ce_next,kappa,p.kappa_D_eff,dx,source_pe);
-                    %Jac_f_ps_next = eq_build_fun.LHS_Jac_f_Fdiff_ps(ps_next,ce_next,sigma,dx,source_ps,separator_index,current_source_psBC);
-                    %Jac_f_csn_next= eq_build_fun.LHS_Jac_f_Fdiff_cs(resized_csn_next,Dsn,rn,source_csn);
-                    %Jac_f_csp_next= eq_build_fun.LHS_Jac_f_Fdiff_cs(resized_csp_next,Dsp,rp,source_csp);
-
+                    
                     Jac_f_ce_next = eq_build_fun.LHS_Jac_f_Fdiff_ce(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,De,dx,source_ce);
                     Jac_f_pe_next = eq_build_fun.LHS_Jac_f_Fdiff_pe(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,kappa,p.kappa_D_eff,dx,source_pe);
                     Jac_f_ps_next = eq_build_fun.LHS_Jac_f_Fdiff_ps(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,sigma,dx,source_ps,separator_index,current_source_psBC);
-                    Jac_f_csn_next= eq_build_fun.LHS_Jac_f_Fdiff_cs(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,resized_csn_next,Dsn,rn,source_csn);
-                    Jac_f_csp_next= eq_build_fun.LHS_Jac_f_Fdiff_cs(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,resized_csp_next,Dsp,rp,source_csp);
+                    Jac_f_csn_next= eq_build_fun.LHS_Jac_f_Fdiff_cs(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,resized_csn_next,Dsn,rn,source_csn,"csn");
+                    Jac_f_csp_next= eq_build_fun.LHS_Jac_f_Fdiff_cs(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,resized_csp_next,Dsp,rp,source_csp,"csp");
+
+                    Jac_f_ce_dpe_next = eq_build_fun.LHS_Jac_f_Fdiff_cedpe(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,De,dx,source_ce);
+                    Jac_f_ce_dps_next = eq_build_fun.LHS_Jac_f_Fdiff_cedps(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,De,dx,source_ce);
+                    Jac_f_ce_dcs_next = eq_build_fun.LHS_Jac_f_Fdiff_cedcs(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,De,dx,source_ce);
+                    
+                    Jac_f_pe_dce_next = eq_build_fun.LHS_Jac_f_Fdiff_pedce(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,kappa,p.kappa_D_eff,dx,source_pe);
+                    Jac_f_pe_dps_next = eq_build_fun.LHS_Jac_f_Fdiff_pedps(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,kappa,p.kappa_D_eff,dx,source_pe);
+                    Jac_f_pe_dcs_next = eq_build_fun.LHS_Jac_f_Fdiff_pedcs(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,kappa,p.kappa_D_eff,dx,source_pe);
+
+                    Jac_f_ps_dce_next = eq_build_fun.LHS_Jac_f_Fdiff_psdce(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,sigma,dx,source_ps,separator_index,current_source_psBC);
+                    Jac_f_ps_dpe_next = eq_build_fun.LHS_Jac_f_Fdiff_psdpe(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,sigma,dx,source_ps,separator_index,current_source_psBC);
+                    Jac_f_ps_dcs_next = eq_build_fun.LHS_Jac_f_Fdiff_psdcs(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,sigma,dx,source_ps,separator_index,current_source_psBC);
+
+                    Jac_f_csn_dce_next = eq_build_fun.LHS_Jac_f_Fdiff_csdce(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,resized_csn_next,Dsn,rn,source_csn,"csn");
+                    Jac_f_csp_dce_next = eq_build_fun.LHS_Jac_f_Fdiff_csdce(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,resized_csp_next,Dsp,rp,source_csp,"csp");
+                    Jac_f_csn_dpe_next = eq_build_fun.LHS_Jac_f_Fdiff_csdpe(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,resized_csn_next,Dsn,rn,source_csn,"csn");
+                    Jac_f_csp_dpe_next = eq_build_fun.LHS_Jac_f_Fdiff_csdpe(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,resized_csp_next,Dsp,rp,source_csp,"csp");
+                    Jac_f_csn_dps_next = eq_build_fun.LHS_Jac_f_Fdiff_csdps(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,resized_csn_next,Dsn,rn,source_csn,"csn");
+                    Jac_f_csp_dps_next = eq_build_fun.LHS_Jac_f_Fdiff_csdps(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,resized_csp_next,Dsp,rp,source_csp,"csp");
 
 
+                    %% Missing:
 
-                    if (1==1 |det(Jac_f_pe_next)==0)
-                        if (deb.prints>0)
-                            disp("The jacobian for the potential in the electrolyte has a determinant of 0. The diagonal boost method is used to make the matrix invertible.")
-                        end
-                        for iiii=1:1:len
-                            Jac_f_pe_next(iiii,iiii)=Jac_f_pe_next(iiii,iiii)*1.0000000001;
-                        end
-                    end
-                    if (det(Jac_f_ps_next(1:sol.nb_cell_n,1:sol.nb_cell_n))==0)
-                        if (deb.prints>0)
-                            disp("The jacobian for the potential in the neg. electrode has a determinant of 0. The diagonal boost method is used to make the matrix invertible.")
-                        end
-                        for iiii=1:1:sol.nb_cell_n
-                            Jac_f_ps_next(iiii,iiii)=Jac_f_ps_next(iiii,iiii)*1.0000000001;
-                        end
-                    end
-                    if 1==1 | (det(Jac_f_ps_next(sol.nb_cell_n+1:sol.nb_cell_p+sol.nb_cell_n,sol.nb_cell_n+1:sol.nb_cell_p+sol.nb_cell_n))==0)
-                        if (deb.prints>0)
-                            disp("The jacobian for the potential in the pos. electrode has a determinant of 0. The diagonal boost method is used to make the matrix invertible.")
-                        end
-                        for iiii=sol.nb_cell_n+1:1:sol.nb_cell_p+sol.nb_cell_n
-                            Jac_f_ps_next(iiii,iiii)=Jac_f_ps_next(iiii,iiii)*1.0000000001;
-                        end
-                    end
+
+                    %% - d(f_ps)/dcs
+                    
+
+
+                    %if (1==0 | det(Jac_f_pe_next)==0)
+                    %    if (deb.prints>0)
+                    %        disp("The jacobian for the potential in the electrolyte has a determinant of 0. The diagonal boost method is used to make the matrix invertible.")
+                    %    end
+                    %    for iiii=1:1:len
+                    %        Jac_f_pe_next(iiii,iiii)=Jac_f_pe_next(iiii,iiii)*1.0000000001;
+                    %    end
+                    %end
+                    %if (1==0 | det(Jac_f_ps_next(1:sol.nb_cell_n,1:sol.nb_cell_n))==0)
+                    %    if (deb.prints>0)
+                    %        disp("The jacobian for the potential in the neg. electrode has a determinant of 0. The diagonal boost method is used to make the matrix invertible.")
+                    %    end
+                    %    for iiii=1:1:sol.nb_cell_n
+                    %        Jac_f_ps_next(iiii,iiii)=Jac_f_ps_next(iiii,iiii)*1.0000000001;
+                    %    end
+                    %end
+                    %if (1==0 | (det(Jac_f_ps_next(sol.nb_cell_n+1:sol.nb_cell_p+sol.nb_cell_n,sol.nb_cell_n+1:sol.nb_cell_p+sol.nb_cell_n))==0))
+                    %    if (deb.prints>0)
+                    %        disp("The jacobian for the potential in the pos. electrode has a determinant of 0. The diagonal boost method is used to make the matrix invertible.")
+                    %    end
+                    %    for iiii=sol.nb_cell_n+1:1:sol.nb_cell_p+sol.nb_cell_n
+                    %        Jac_f_ps_next(iiii,iiii)=Jac_f_ps_next(iiii,iiii)*1.0000000001;
+                    %    end
+                    %end
                 end
 
 
@@ -154,23 +170,80 @@ classdef newton_solver_functions
                 Jac_gcsn=Mn/dt -0.5*Jac_f_csn_next;
                 Jac_gcsp=Mp/dt -0.5*Jac_f_csp_next;
 
+                Jac_gcsn_dpe=-0.5*Jac_f_csn_dpe_next;
+                Jac_gcsp_dpe=-0.5*Jac_f_csp_dpe_next;
+                Jac_gcsn_dce=-0.5*Jac_f_csn_dce_next;
+                Jac_gcsp_dce=-0.5*Jac_f_csp_dce_next;
+                Jac_gcsn_dps=-0.5*Jac_f_csn_dps_next;
+                Jac_gcsp_dps=-0.5*Jac_f_csp_dps_next;
+
                 %Solve Li concentration in electrolyte
                 gc=M*(ce_next-ce)/dt - 0.5*(f_ce_next+f_ce);
-                Jac_gc=M/dt -0.5*Jac_f_ce_next;
+                Jac_gce=M/dt -0.5*Jac_f_ce_next;
+                Jac_gce_dpe= -0.5*Jac_f_ce_dpe_next;
+                Jac_gce_dps= -0.5*Jac_f_ce_dps_next;
+                Jac_gce_dcs= -0.5*Jac_f_ce_dcs_next;
 
 
                 %Solve electric potential in electrolyte
                 gp = f_pe_next;
                 Jac_gp= Jac_f_pe_next;
+                Jac_gpe_dce= Jac_f_pe_dce_next;
+                Jac_gpe_dps= Jac_f_pe_dps_next;
+                Jac_gpe_dcs= Jac_f_pe_dcs_next;
 
                 %Solve electric potential in solid
                 gps = f_ps_next;
                 Jac_gps= Jac_f_ps_next;
+                Jac_gps_dce= Jac_f_ps_dce_next;
+                Jac_gps_dpe= Jac_f_ps_dpe_next;
+                Jac_gps_dcs= Jac_f_ps_dcs_next;
 
                 % Form the coupled system 
-                Jac_coupled = blkdiag(Jac_gcsn,Jac_gcsp,Jac_gc,Jac_gp,Jac_gps) ;
+                Jac_coupled = blkdiag(Jac_gcsn,Jac_gcsp,Jac_gce,Jac_gp,Jac_gps) ;
 
+                begin_csn =1;
+                end_csn   =(sol.part_nb_cell+1)*(sol.nb_cell_n);
+                begin_csp =(sol.part_nb_cell+1)*(sol.nb_cell_n)+1;
+                end_csp   =(sol.part_nb_cell+1)*(sol.nb_cell_n+sol.nb_cell_p);
+                begin_cs  =1;
+                end_cs    =(sol.part_nb_cell+1)*(sol.nb_cell_n+sol.nb_cell_p);
+                begin_ce  =(sol.part_nb_cell+1)*(sol.nb_cell_n+sol.nb_cell_p)+1;
+                end_ce    =(sol.part_nb_cell+1)*(sol.nb_cell_n+sol.nb_cell_p)+sol.nb_cell;
+                begin_pe  =(sol.part_nb_cell+1)*(sol.nb_cell_n+sol.nb_cell_p)+sol.nb_cell+1;
+                end_pe    =(sol.part_nb_cell+1)*(sol.nb_cell_n+sol.nb_cell_p)+sol.nb_cell+sol.nb_cell;
+                begin_ps  =(sol.part_nb_cell+1)*(sol.nb_cell_n+sol.nb_cell_p)+sol.nb_cell+sol.nb_cell+1;
+                end_ps    =(sol.part_nb_cell+1)*(sol.nb_cell_n+sol.nb_cell_p)+sol.nb_cell+sol.nb_cell+sol.nb_cell_n+sol.nb_cell_p;
                 
+                
+
+                Jac_coupled(begin_ce:end_ce,begin_pe:end_pe)=Jac_gce_dpe;
+                Jac_coupled(begin_ce:end_ce,begin_ps:end_ps)=Jac_gce_dps;
+                %Jac_coupled(begin_ce:end_ce,begin_cs:end_cs)=Jac_gce_dcs;
+
+                Jac_coupled(begin_pe:end_pe,begin_ce:end_ce)=Jac_gpe_dce;
+                Jac_coupled(begin_pe:end_pe,begin_ps:end_ps)=Jac_gpe_dps;
+                %Jac_coupled(begin_pe:end_pe,begin_cs:end_cs)=Jac_gpe_dcs;
+
+
+                Jac_coupled(begin_ps:end_ps,begin_ce:end_ce)=Jac_gps_dce;
+                Jac_coupled(begin_ps:end_ps,begin_pe:end_pe)=Jac_gps_dpe;
+                %Jac_coupled(begin_ps:end_ps,begin_cs:end_cs)=Jac_gps_dcs;
+
+                Jac_coupled(begin_csn:end_csn,begin_ce:end_ce)=Jac_gcsn_dce;
+                Jac_coupled(begin_csn:end_csn,begin_pe:end_pe)=Jac_gcsn_dpe;
+                Jac_coupled(begin_csn:end_csn,begin_ps:end_ps)=Jac_gcsn_dps;
+
+                Jac_coupled(begin_csp:end_csp,begin_ce:end_ce)=Jac_gcsp_dce;
+                Jac_coupled(begin_csp:end_csp,begin_pe:end_pe)=Jac_gcsp_dpe;
+                Jac_coupled(begin_csp:end_csp,begin_ps:end_ps)=Jac_gcsp_dps;
+
+                %figure(264);
+                %spy(Jac_coupled)
+                %grid on
+                %grid minor
+
+
                 g_coupled   = cat(1,gcsn,gcsp);
                 g_coupled   = cat(1,g_coupled,gc);
                 g_coupled   = cat(1,g_coupled,gp);
@@ -178,17 +251,17 @@ classdef newton_solver_functions
 
                 % Solve the system
                     
-                %delta_coupled = (Jac_coupled) \ (-g_coupled);
-                delta_coupled = linsolve(Jac_coupled,-g_coupled);
+                delta_coupled = (Jac_coupled) \ (-g_coupled);
+                %delta_coupled = linsolve(Jac_coupled,-g_coupled);
                 
                 
-                delta_csn = linsolve(Jac_gcsn,-gcsn);
-                delta_csp = linsolve(Jac_gcsp,-gcsp);
-                delta_c = linsolve(Jac_gc,-gc);
-                delta_p = linsolve(Jac_gp,-gp);
-                delta_ps = linsolve(Jac_gps,-gps);
-                delta_ps1 = linsolve(Jac_gps(1:3,1:3),-gps(1:3));
-                delta_ps2 = linsolve(Jac_gps(4:6,4:6),0*gps(4:6));
+                %delta_csn = linsolve(Jac_gcsn,-gcsn);
+                %delta_csp = linsolve(Jac_gcsp,-gcsp);
+                %delta_c = linsolve(Jac_gce,-gc);
+                %delta_p = linsolve(Jac_gp,-gp);
+                %delta_ps = linsolve(Jac_gps,-gps);
+                %delta_ps1 = linsolve(Jac_gps(1:3,1:3),-gps(1:3));
+                %delta_ps2 = linsolve(Jac_gps(4:6,4:6),0*gps(4:6));
 
                 %delta_coupled = cat(1,delta_csn,delta_csp);
                 %delta_coupled = cat(1,delta_coupled,delta_c);
@@ -199,8 +272,8 @@ classdef newton_solver_functions
                 norm_delta_ps = sqrt(sum(transpose(delta_coupled(sol.nb_cell_n*lenr+sol.nb_cell_p*lenr+len+len+1 : sol.nb_cell_n*lenr+sol.nb_cell_p*lenr+len+len+len_ps)) * delta_coupled(sol.nb_cell_n*lenr+sol.nb_cell_p*lenr+len+len+1 : sol.nb_cell_n*lenr+sol.nb_cell_p*lenr+len+len+len_ps)))/len_ps;
                 norm_delta_pe = sqrt(sum(transpose(delta_coupled(sol.nb_cell_n*lenr+sol.nb_cell_p*lenr+len+1 : sol.nb_cell_n*lenr+sol.nb_cell_p*lenr+len+len)) * delta_coupled(sol.nb_cell_n*lenr+sol.nb_cell_p*lenr+len+1 : sol.nb_cell_n*lenr+sol.nb_cell_p*lenr+len+len)))/len;
                 norm_delta_ce = sqrt(sum(transpose(delta_coupled(sol.nb_cell_n*lenr+sol.nb_cell_p*lenr+1 : sol.nb_cell_n*lenr+sol.nb_cell_p*lenr+len)) * delta_coupled(sol.nb_cell_n*lenr+sol.nb_cell_p*lenr+1 : sol.nb_cell_n*lenr+sol.nb_cell_p*lenr+len)))/len;
-                norm_delta_csp = sqrt(sum(transpose(delta_coupled(1 : sol.nb_cell_n*lenr)) * delta_coupled(1 : sol.nb_cell_n*lenr)))/(sol.nb_cell_n*lenr);
-                norm_delta_csn = sqrt(sum(transpose(delta_coupled(sol.nb_cell_n*lenr+1 : sol.nb_cell_n*lenr+sol.nb_cell_p*lenr)) * delta_coupled(sol.nb_cell_n*lenr+1 : sol.nb_cell_n*lenr+sol.nb_cell_p*lenr)))/(sol.nb_cell_p*lenr);
+                norm_delta_csn = sqrt(sum(transpose(delta_coupled(1 : sol.nb_cell_n*lenr)) * delta_coupled(1 : sol.nb_cell_n*lenr)))/(sol.nb_cell_n*lenr);
+                norm_delta_csp = sqrt(sum(transpose(delta_coupled(sol.nb_cell_n*lenr+1 : sol.nb_cell_n*lenr+sol.nb_cell_p*lenr)) * delta_coupled(sol.nb_cell_n*lenr+1 : sol.nb_cell_n*lenr+sol.nb_cell_p*lenr)))/(sol.nb_cell_p*lenr);
 
                 hist.residuals(1,newt_ite)=norm_delta_coupled;
                 hist.residuals(2,newt_ite)=norm_delta_ps;
@@ -209,7 +282,7 @@ classdef newton_solver_functions
                 hist.residuals(5,newt_ite)=norm_delta_csn;
                 hist.residuals(6,newt_ite)=norm_delta_csp;
 
-                if deb.prints>=2
+                if deb.prints>=1 && time_ite==177
                     
 
                     disp("DEBUG BEN j ------------------------------ newt_ite="+num2str(newt_ite)+" , time ite="+num2str(time_ite))
@@ -224,16 +297,21 @@ classdef newton_solver_functions
                     disp(transpose(resized_csn_next))
                     disp(transpose(resized_csp_next))
                     %disp((Jac_gcsn))
+                    %disp((Jac_gcsp))
                     disp(transpose(delta_coupled(1 : sol.nb_cell_n*lenr)))
                     disp(transpose(delta_coupled(sol.nb_cell_n*lenr+1:sol.nb_cell_n*lenr+sol.nb_cell_p*lenr)))
-                    %disp(source_csn)
-                    %disp(source_csp)
-                    %disp(p.A_s_n)
+                    
+                    %figure(265);
+                    %plot(1:sol.nb_cell_n*lenr,transpose(delta_coupled(1 : sol.nb_cell_n*lenr)),'LineWidth',2);
+                    %grid on
+                    %grid minor
+
+                    
 
                     disp("DEBUG BEN ce newt_ite="+num2str(newt_ite)+" , time ite="+num2str(time_ite))
                     disp(transpose(gc))
                     disp(transpose(ce_next))
-                    disp((Jac_gc))
+                    disp((Jac_gce))
                     disp(transpose(delta_coupled(sol.nb_cell_n*lenr+sol.nb_cell_p*lenr+1 : sol.nb_cell_n*lenr+sol.nb_cell_p*lenr+len)))
 
 
@@ -241,7 +319,7 @@ classdef newton_solver_functions
 
                     disp(transpose(gp))
                     disp(transpose(pe_next))
-                    disp((Jac_gp))
+                    disp((Jac_gp))  
                     disp(transpose(delta_coupled(sol.nb_cell_n*lenr+sol.nb_cell_p*lenr+len+1 : sol.nb_cell_n*lenr+sol.nb_cell_p*lenr+len+len)))
                     
                     disp("DEBUG BEN ps newt_ite="+num2str(newt_ite)+" , time ite="+num2str(time_ite))
@@ -264,7 +342,7 @@ classdef newton_solver_functions
                 % Update solutions 
 
                 if isnan(norm_delta_coupled)==1 | isreal(norm_delta_coupled)==0
-                    disp("Newton method for lithium concentration in electrlyte did not converge: "+num2str(newt_ite)+" , "+num2str(norm_delta_coupled))
+                    disp("Newton method for for coupled system did not converge: "+num2str(newt_ite)+" , "+num2str(time_ite)+" , "+num2str(norm_delta_coupled))
                     break
                 end
 
@@ -288,7 +366,136 @@ classdef newton_solver_functions
                 end_val = end_val + len_ps;
                 ps_next = ps_next + relax_factor*delta_coupled(plateau:end_val);
 
-                min_c=0.001;
+
+                plot_csp_local_newton_results=0;
+                if plot_csp_local_newton_results==1
+                    figure(2622222);
+                    fs = 16;
+                    set(gcf,'Position',[50 50 1800 1000]);     
+
+                    subplot(5,5,[1,2])
+                    plot(1:sol.nb_cell_p*lenr,transpose(delta_coupled(sol.nb_cell_n*lenr+1:sol.nb_cell_n*lenr+sol.nb_cell_p*lenr)),'LineWidth',2);
+                    title('delta coupled','fontsize',fs);
+                    grid on
+                    grid minor
+
+                    subplot(5,5,[4,5])
+                    plot(1:sol.nb_cell_p*lenr,resized_csp_next,'LineWidth',2);
+                    title('csp next','fontsize',fs);
+                    grid on
+                    grid minor
+
+                    subplot(5,5,[6,7])
+                    plot(1:sol.nb_cell_p,fv.j(sol.nb_cell_n+sol.nb_cell_s+1:sol.nb_cell),'LineWidth',2);
+                    title('j','fontsize',fs);
+                    grid on
+                    grid minor
+
+                    subplot(5,5,[9,10])
+                    plot(1:sol.nb_cell_p,source_csp,'LineWidth',2);
+                    title('source csp','fontsize',fs);
+                    grid on
+                    grid minor
+
+                    subplot(5,5,[11,12])
+                    plot(1:sol.nb_cell_n,cse_next(1:sol.nb_cell_n),'LineWidth',2);
+                    title('csen','fontsize',fs);
+                    grid on
+                    grid minor
+
+                    subplot(5,5,[14,15])
+                    plot(sol.nb_cell_n+1:2*sol.nb_cell_n,cse_next(sol.nb_cell_n+1:2*sol.nb_cell_n),'LineWidth',2);
+                    title('csep','fontsize',fs);
+                    grid on
+                    grid minor
+
+                    subplot(5,5,[16,17])
+                    plot(1:sol.nb_cell_p*lenr,gcsp,'LineWidth',2);
+                    title('gcsp','fontsize',fs);
+                    grid on
+                    grid minor
+
+                    subplot(5,5,[19,20])
+                    plot(1:sol.nb_cell_p*lenr,Mp*(resized_csp_next-resized_csp)/dt,'LineWidth',2);
+                    title('M*dcsp/dt','fontsize',fs);
+                    grid on
+                    grid minor
+
+                    subplot(5,5,[21,22])
+                    plot(1:sol.nb_cell_p*lenr,- 0.5*(f_csp_next+f_csp),'LineWidth',2);
+                    title('-fcsp','fontsize',fs);
+                    grid on
+                    grid minor
+                end
+
+
+                plot_csn_local_newton_results=0;
+                if plot_csn_local_newton_results==1 && time_ite>=19
+                    figure(266);
+                    fs = 16;
+                    set(gcf,'Position',[50 50 1800 1000]);     
+
+                    subplot(5,5,[1,2])
+                    plot(1:sol.nb_cell_n*lenr,transpose(delta_coupled(1:sol.nb_cell_n*lenr)),'LineWidth',2);
+                    title('delta coupled','fontsize',fs);
+                    grid on
+                    grid minor
+
+                    subplot(5,5,[4,5])
+                    plot(1:sol.nb_cell_n*lenr,resized_csn_next,'LineWidth',2);
+                    title('csn next','fontsize',fs);
+                    grid on
+                    grid minor
+
+                    subplot(5,5,[6,7])
+                    plot(1:sol.nb_cell_n,fv.j(1:sol.nb_cell_n),'LineWidth',2);
+                    title('j','fontsize',fs);
+                    grid on
+                    grid minor
+
+                    subplot(5,5,[9,10])
+                    plot(1:sol.nb_cell_n,source_csn,'LineWidth',2);
+                    title('source csn','fontsize',fs);
+                    grid on
+                    grid minor
+
+                    subplot(5,5,[11,12])
+                    plot(1:sol.nb_cell_n,cse_next(1:sol.nb_cell_n),'LineWidth',2);
+                    title('csen','fontsize',fs);
+                    grid on
+                    grid minor
+
+                    subplot(5,5,[14,15])
+                    plot(sol.nb_cell_n+1:2*sol.nb_cell_n,cse_next(sol.nb_cell_n+1:2*sol.nb_cell_n),'LineWidth',2);
+                    title('csep','fontsize',fs);
+                    grid on
+                    grid minor
+
+                    subplot(5,5,[16,17])
+                    plot(1:sol.nb_cell_n*lenr,gcsn,'LineWidth',2);
+                    title('gcsn','fontsize',fs);
+                    grid on
+                    grid minor
+
+                    subplot(5,5,[19,20])
+                    plot(1:sol.nb_cell_n*lenr,Mn*(resized_csn_next-resized_csn)/dt,'LineWidth',2);
+                    title('M*dcsn/dt','fontsize',fs);
+                    grid on
+                    grid minor
+
+                    subplot(5,5,[21,22])
+                    plot(1:sol.nb_cell_n*lenr,- 0.5*(f_csn_next+f_csn),'LineWidth',2);
+                    title('-fcsn','fontsize',fs);
+                    grid on
+                    grid minor
+                end
+                 
+
+
+
+
+
+                min_c=0.0000001;
 
                 for iiii=1:1:length(resized_csn_next)
                     if resized_csn_next(iiii)<min_c
@@ -319,12 +526,11 @@ classdef newton_solver_functions
                     end
                 end
                 
-                for iiii =[1:sol.nb_cell_n+sol.nb_cell_p]
-                    if iiii<=sol.nb_cell_n
-                        cse_next(iiii)=resized_csn_next(sol.part_nb_cell*iiii);
-                    else
-                        cse_next(iiii)=resized_csn_next(sol.part_nb_cell*(iiii-sol.nb_cell_n));
-                    end
+                for iiii =[1:sol.nb_cell_n]
+                    cse_next(iiii)=resized_csn_next((sol.part_nb_cell+1)*iiii);
+                end
+                for iiii =[1:sol.nb_cell_p]
+                    cse_next(iiii+sol.nb_cell_n)=resized_csp_next((sol.part_nb_cell+1)*(iiii));
                 end
 
                 if deb.videos_generation==1
@@ -337,8 +543,8 @@ classdef newton_solver_functions
 
                 if deb.prints>=1
                     
-                    disp("the ite number and residual are:"+num2str(newt_ite)+" , "+num2str(norm_delta_coupled)+" , "+num2str(norm_delta_ps)+" , "+num2str(norm_delta_pe) ...
-                                                                             +" , "+num2str(norm_delta_ce)+" , "+num2str(norm_delta_csn)+" , "+num2str(norm_delta_csp))
+                    disp("newt_ite="+num2str(newt_ite)+" time_ite="+num2str(time_ite)+" residuals: coupled="+num2str(norm_delta_coupled)+" , ps="+num2str(norm_delta_ps)+" , pe="+num2str(norm_delta_pe) ...
+                                                                             +" , ce="+num2str(norm_delta_ce)+" , csn="+num2str(norm_delta_csn)+" , csp="+num2str(norm_delta_csp))
                 end
 
 
@@ -347,8 +553,8 @@ classdef newton_solver_functions
                 %if (norm_delta_coupled<newt_lim || (-(log10(max(hist.residuals(1,:)))-log10(min(hist.residuals(1,1:newt_ite))))<log10(newt_lim)-1)) && newt_ite>1
                 if (norm_delta_coupled<newt_lim) && newt_ite>1
                     
-                    if deb.prints>=0
-                        disp("Newton method for lithium concentration in electrlyte has converged:"+num2str(newt_ite)+" , "+num2str(norm_delta_coupled) ...
+                    if deb.prints>=1
+                        disp("Newton method for the coupled system has converged:"+num2str(newt_ite)+" , "+num2str(norm_delta_coupled) ...
                                                                             +" , "+num2str(norm_delta_ps)+" , "+num2str(norm_delta_pe) ...
                                                                             +" , "+num2str(norm_delta_ce)+" , "+num2str(norm_delta_csn)+" , "+num2str(norm_delta_csp) ...
                                                                             +" , "+num2str(-(log10(max(hist.residuals(1,:)))-log10(min(hist.residuals(1,1:newt_ite))))) ...
@@ -357,7 +563,7 @@ classdef newton_solver_functions
                     break
                 elseif newt_ite==newt_max_ite
                     
-                    disp("Newton method for lithium concentration in electrlyte did not converge:"+num2str(newt_ite)+" , "+num2str(norm_delta_coupled) ...
+                    disp("Newton method for the coupled system did not converge:"+num2str(newt_ite)+" , "+num2str(norm_delta_coupled) ...
                                                                             +" , "+num2str(norm_delta_ps)+" , "+num2str(norm_delta_pe) ...
                                                                             +" , "+num2str(norm_delta_ce)+" , "+num2str(norm_delta_csn)+" , "+num2str(norm_delta_csp))
                     disp("Limit of the solver: "+num2str(log10(newt_lim))+" current order of magnitude of residual: "+ num2str(-(log10(max(hist.residuals(1,:)))-log10(min(hist.residuals(1,:))))) ...
@@ -365,6 +571,10 @@ classdef newton_solver_functions
                     break
                 end
                 
+            end
+
+            if time_ite==sol.nb_steps
+                writetable(array2table(Jac_coupled),'Jac_coupled_.xlsx')
             end
 
             if deb.prints>=0

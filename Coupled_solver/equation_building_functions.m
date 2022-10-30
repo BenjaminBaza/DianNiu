@@ -12,24 +12,30 @@ classdef equation_building_functions
                     i_rcell=lenr;
                 end
                 i_xcell=ceil(i/lenr);
-                %disp("DEBUG BEN "+num2str(i_xcell)+"  and "+num2str(i)+"  and "+num2str(i_rcell)+"  and "+num2str(lenr))
                 sour=source(i_xcell);
-                fc(i)=obj.LHS_f_cs_single_cell(c,D,r,sour,i,i_rcell);     
+                fc(i)=obj.LHS_f_cs_single_cell(c,D,r,sour,i,i_rcell,0);     
             end
         end
 
-        function f = LHS_f_cs_single_cell (obj,c,D,r,source,i,i_rcell)
+        function f = LHS_f_cs_single_cell (obj,c,D,r,source,i,i_rcell,print_info)
             global BC_fun
             [rm,rc,rp,cm,cc,cp]=BC_fun.concentration_solid_BC(c,r,i,source,D,i_rcell);
                     
             factor_plus = D * ((rp+rc)/2)^2 /(rp-rc);
             factor_minus= D * ((rc+rm)/2)^2 /(rc-rm);
-            f= cp*factor_plus + cm*factor_minus - cc*(factor_plus+factor_minus);       
+            f= cp*factor_plus + cm*factor_minus - cc*(factor_plus+factor_minus);  
+            if print_info ==1
+                disp("DEBUG BEN LHS_f_cs_single_cell "+num2str(cp)+"  "+num2str(factor_plus)+"  "+num2str(cp*factor_plus)+"  "+num2str(cm*factor_minus)+"  "+num2str(cc*(factor_plus+factor_minus))+"  "+num2str(f))
+            end     
         end
 
-        function Jac_fcs = LHS_Jac_f_Fdiff_cs(obj,pe,ps,ce,cse,T,Ueq,resize_cs,D,r,source)
+        function Jac_fcs = LHS_Jac_f_Fdiff_cs(obj,pe,ps,ce,cse,T,Ueq,resize_cs,D,r,source,electrode)
             global fv
+            global sol
+            global p
             global BV_fun
+            mock_j = fv.j;
+
             dc_prop=1.0001;
             len=length(resize_cs);
             lenr=length(r);
@@ -38,6 +44,7 @@ classdef equation_building_functions
             
             mock_source = source;
             mock_j = fv.j;
+            mock_cse = cse;
 
             for i = 1:1:len   
                 i_rcell=mod(i,lenr);
@@ -46,31 +53,241 @@ classdef equation_building_functions
                 end
                 i_xcell=ceil(i/lenr);
                 sour=source(i_xcell);
+                sour_save=sour;
 
-                fcs   =  obj.LHS_f_cs_single_cell (resize_cs,D,r,sour,i,i_rcell);
+
+                fcs   =  obj.LHS_f_cs_single_cell (resize_cs,D,r,sour,i,i_rcell,0);
                 for ii = max(1,i-1):1:min(len,i+1)
-                    cpdc=resize_cs;
-                    %cpdc(ii)=cpdc(ii)*dc_prop;
-                    %fcs_diff   =  obj.LHS_f_cs_single_cell (cpdc,D,r,sour,i,i_rcell);
-                    %Jac_fcs(i,ii)= (fcs_diff-fcs)/((resize_cs(ii)*(dc_prop-1)));
-
-                    if not(resize_cs(ii)==0)
-                        cpdc(ii)=cpdc(ii)*dc_prop;
-                        fcs_diff   =  obj.LHS_f_cs_single_cell (cpdc,D,r,sour,i,i_rcell);
-                        Jac_fcs(i,ii)= (fcs_diff-fcs)/((resize_cs(ii)*(dc_prop-1)));
-                    else
-                        cpdc(ii)=0.000001;
-                        fcs_diff   =  obj.LHS_f_cs_single_cell (cpdc,D,r,sour,i,i_rcell);
-                        Jac_fcs(i,ii)= (fcs_diff-fcs)/(0.000001);
+                    if (i_rcell==lenr && ii==i+1)||(i_rcell==1 && ii==i-1)
+                        continue
                     end
 
+                    cpdc=resize_cs;
+                    if not(cpdc(ii)==0)
+                        divider=(cpdc(ii)*(dc_prop-1));
+                        cpdc(ii)=cpdc(ii)*dc_prop;
+                    else
+                        cpdc(ii)=0.000001;
+                        divider=0.000001;
+                    end
+
+                    if i==ii && i_rcell==lenr 
+                        if electrode=="csn"
+                            i_xfullcell=i_xcell;
+                            i_xfullercell=i_xcell;
+                            mock_cse(i_xfullcell)=min(cpdc(i),p.csn_max);
+                        else
+                            i_xfullcell=i_xcell+sol.nb_cell_n;
+                            i_xfullercell=i_xcell+sol.nb_cell_n+sol.nb_cell_s;
+                            mock_cse(i_xfullcell)=min(cpdc(i),p.csp_max);
+                        end
+                        mock_j=BV_fun.butler_volmer_equation(pe,ps,ce,mock_cse,T,Ueq,"LHS_Jac_f_Fdiff_cs");
+                        %disp("DEBUG BEN LHS_Jac_f_Fdiff_cs 1 "+num2str(sour)+"  "+num2str(cpdc(i))+"  "+num2str(i)+"  "+num2str(p.csn_max)+"  "+num2str(p.csp_max))
+                        sour=obj.update_source_single_cell(i_xfullercell,mock_j,"cs");     
+                        %disp("DEBUG BEN LHS_Jac_f_Fdiff_cs 2 "+num2str(sour))
+                    end
+
+                    fcs_diff   =  obj.LHS_f_cs_single_cell (cpdc,D,r,sour,i,i_rcell,0);
+                    Jac_fcs(i,ii)= (fcs_diff-fcs)/(divider);
+
+                    if i==ii && i_rcell==lenr 
+
+                        fcs_diff2   =  obj.LHS_f_cs_single_cell (cpdc,D,r,sour_save,i,i_rcell,0);
+                        Jac_fcs2= (fcs_diff2-fcs)/(divider);
+                        %disp("DEBUG BEN LHS_Jac_f_Fdiff_cs 3 "+num2str(fcs_diff)+"  "+num2str(fcs_diff2)+"  "+num2str(Jac_fcs(i,ii))+"  "+num2str(Jac_fcs2))
+                    end
+                    
                 end
-                
             end
-                
         end
 
 
+        function Jac_fcs = LHS_Jac_f_Fdiff_csdce(obj,pe,ps,ce,cse,T,Ueq,resize_cs,D,r,source,electrode)
+            global fv
+            global sol
+            global p
+            global BV_fun
+            mock_j = fv.j;
+
+            dc_prop=1.0001;
+            len=length(resize_cs);
+            lenr=length(r);
+            lenc=len/lenr;
+            Jac_fcs=zeros(len,sol.nb_cell);
+            
+            mock_source = source;
+            mock_j = fv.j;
+            mock_cse = cse;
+
+            for i = 1:1:len   
+                i_rcell=mod(i,lenr);
+                if i_rcell==0
+                    i_rcell=lenr;
+                end
+                if not(i_rcell==lenr)
+                    continue
+                end 
+
+                i_xcell=ceil(i/lenr);
+                if electrode=="csn"
+                    i_xfullcell=i_xcell;
+                else
+                    i_xfullcell=i_xcell+sol.nb_cell_n+sol.nb_cell_s;
+                end
+                sour=source(i_xcell);
+                sour_save=sour;
+
+                fcs   =  obj.LHS_f_cs_single_cell (resize_cs,D,r,sour,i,i_rcell,0);
+
+                cpdc=ce;
+                if not(cpdc(i_xfullcell)==0)
+                    divider=(cpdc(i_xfullcell)*(dc_prop-1));
+                    cpdc(i_xfullcell)=cpdc(i_xfullcell)*dc_prop;
+                else
+                    cpdc(i_xfullcell)=0.000001;
+                    divider=0.000001;
+                end
+
+                if  i_rcell==lenr 
+                    
+                    mock_j=BV_fun.butler_volmer_equation(pe,ps,cpdc,cse,T,Ueq,"LHS_Jac_f_Fdiff_csdce"); 
+                    sour=obj.update_source_single_cell(i_xfullcell,mock_j,"cs"); 
+                end
+
+                fcs_diff   =  obj.LHS_f_cs_single_cell (resize_cs,D,r,sour,i,i_rcell,0);
+                Jac_fcs(i,i_xfullcell)= (fcs_diff-fcs)/(divider);
+                %disp("DEBUG BEN LHS_Jac_f_Fdiff_cs_dce "+num2str(mock_j(i_xfullcell)-fv.j(i_xfullcell))+"  "+num2str(fv.j(i_xfullcell))+"  "+num2str(sour-sour_save)+"  "+num2str(sour)+"  "+num2str((fcs_diff-fcs)))
+
+            
+            end
+        end
+
+        function Jac_fcs = LHS_Jac_f_Fdiff_csdpe(obj,pe,ps,ce,cse,T,Ueq,resize_cs,D,r,source,electrode)
+            global fv
+            global sol
+            global p
+            global BV_fun
+            mock_j = fv.j;
+
+            dc_prop=1.0001;
+            len=length(resize_cs);
+            lenr=length(r);
+            lenc=len/lenr;
+            Jac_fcs=zeros(len,sol.nb_cell);
+            
+            mock_source = source;
+            mock_j = fv.j;
+            mock_cse = cse;
+
+            for i = 1:1:len 
+                i_rcell=mod(i,lenr);
+                if i_rcell==0
+                    i_rcell=lenr;
+                end
+                if not(i_rcell==lenr)
+                    continue
+                end  
+
+                
+                i_xcell=ceil(i/lenr);
+                if electrode=="csn"
+                    i_xfullcell=i_xcell;
+                else
+                    i_xfullcell=i_xcell+sol.nb_cell_n+sol.nb_cell_s;
+                end
+                sour=source(i_xcell);
+                sour_save=sour;
+
+
+                fcs   =  obj.LHS_f_cs_single_cell (resize_cs,D,r,sour,i,i_rcell,0);
+                
+                
+
+                cpdc=pe;
+                if not(cpdc(i_xfullcell)==0)
+                    divider=(cpdc(i_xfullcell)*(dc_prop-1));
+                    cpdc(i_xfullcell)=cpdc(i_xfullcell)*dc_prop;
+                else
+                    cpdc(i_xfullcell)=0.000001;
+                    divider=0.000001;
+                end
+
+                if  i_rcell==lenr 
+                    
+                    mock_j=BV_fun.butler_volmer_equation(cpdc,ps,ce,cse,T,Ueq,"LHS_Jac_f_Fdiff_csdce"); 
+                    sour=obj.update_source_single_cell(i_xfullcell,mock_j,"cs"); 
+                end
+
+                fcs_diff   =  obj.LHS_f_cs_single_cell (resize_cs,D,r,sour,i,i_rcell,0);
+                Jac_fcs(i,i_xfullcell)= (fcs_diff-fcs)/(divider);
+            
+            end
+        end
+
+
+        function Jac_fcs = LHS_Jac_f_Fdiff_csdps(obj,pe,ps,ce,cse,T,Ueq,resize_cs,D,r,source,electrode)
+            global fv
+            global sol
+            global p
+            global BV_fun
+            mock_j = fv.j;
+
+            dc_prop=1.0001;
+            len=length(resize_cs);
+            lenr=length(r);
+            lenc=len/lenr;
+            Jac_fcs=zeros(len,sol.nb_cell_n+sol.nb_cell_p);
+            
+            mock_source = source;
+            mock_j = fv.j;
+            mock_cse = cse;
+
+            for i = 1:1:len 
+                i_rcell=mod(i,lenr);
+                if i_rcell==0
+                    i_rcell=lenr;
+                end
+                if not(i_rcell==lenr)
+                    continue
+                end  
+
+                
+                i_xcell=ceil(i/lenr);
+                if electrode=="csn"
+                    i_xfullcell=i_xcell;
+                    i_xfullercell=i_xcell;
+                else
+                    i_xfullcell=i_xcell+sol.nb_cell_n;
+                    i_xfullercell=i_xcell+sol.nb_cell_n+sol.nb_cell_s;
+                end
+                sour=source(i_xcell);
+                sour_save=sour;
+
+
+                fcs   =  obj.LHS_f_cs_single_cell (resize_cs,D,r,sour,i,i_rcell,0);
+                
+                
+
+                cpdc=ps;
+                if not(cpdc(i_xfullcell)==0)
+                    divider=(cpdc(i_xfullcell)*(dc_prop-1));
+                    cpdc(i_xfullcell)=cpdc(i_xfullcell)*dc_prop;
+                else
+                    cpdc(i_xfullcell)=0.000001;
+                    divider=0.000001;
+                end
+
+                if  i_rcell==lenr 
+                    
+                    mock_j=BV_fun.butler_volmer_equation(pe,cpdc,ce,cse,T,Ueq,"LHS_Jac_f_Fdiff_csdce"); 
+                    sour=obj.update_source_single_cell(i_xfullercell,mock_j,"cs"); 
+                end
+
+                fcs_diff   =  obj.LHS_f_cs_single_cell (resize_cs,D,r,sour,i,i_rcell,0);
+                Jac_fcs(i,i_xfullcell)= (fcs_diff-fcs)/(divider);
+            
+            end
+        end
 
 
         function fc = LHS_f_ce (obj,c,D,dx,source,ID)
@@ -136,17 +353,54 @@ classdef equation_building_functions
                         Jac_fce(i,j)=0.000000001;
                     end
 
+                end
+                
+            end
+                
+        end
 
 
-                    if not(ce(j)==0)
+        function Jac_dfce_dpe = LHS_Jac_f_Fdiff_cedpe(obj,pe,ps,ce,cse,T,Ueq,D,dx,source)
+            dc_prop=1.0001;
+            len=length(ce);
+            Jac_dfce_dpe=zeros(len);
+            
+            global fv
+            global sol
+            global p
+            global BV_fun
+            mock_source = source;
+            mock_j = fv.j;
+
+            for i = 1:1:len        
+                fce   =  obj.LHS_f_ce_single_cell (ce,D,dx,source,i);
+                for j = max(1,i):1:min(len,i)
+                    cpdc=pe;
+                    if not(pe(j)==0)
                         cpdc(j)=cpdc(j)*dc_prop;
-                        fce_diff   =  obj.LHS_f_ce_single_cell (cpdc,D,dx,source,i);
-                        Jac_fce(i,j)= (fce_diff-fce)/((ce(j)*(dc_prop-1)));
+                        divider=(pe(j)*(dc_prop-1));
                     else
                         cpdc(j)=0.000001;
-                        fce_diff   =  obj.LHS_f_ce_single_cell (cpdc,D,dx,source,i);
-                        Jac_fce(i,j)= (fce_diff-fce)/(0.000001);
+                        divider=0.000001;
                     end
+
+                    if i==j 
+                        if i<=sol.nb_cell_n
+                            csmax=p.csn_max;
+                        else
+                            csmax=p.csp_max;
+                        end
+                        mock_j=BV_fun.butler_volmer_equation(cpdc,ps,ce,cse,T,Ueq,"LHS_Jac_f_Fdiff_ce");
+                        mock_source = source;
+                        mock_source(i)=obj.update_source_single_cell(i,mock_j,"ce");
+                    
+                        source_used=mock_source;
+                    else
+                        source_used=source;
+                    end
+
+                    fce_diff   =  obj.LHS_f_ce_single_cell (ce,D,dx,source_used,i);
+                    Jac_dfce_dpe(i,j)= (fce_diff-fce)/(divider);
 
                 end
                 
@@ -154,6 +408,111 @@ classdef equation_building_functions
                 
         end
 
+
+        function Jac_dfce_dps = LHS_Jac_f_Fdiff_cedps(obj,pe,ps,ce,cse,T,Ueq,D,dx,source)            
+            global fv
+            global sol
+            global p
+            global BV_fun
+            mock_source = source;
+            mock_j = fv.j;
+
+            dc_prop=1.0001;
+            len=length(ce);
+            Jac_dfce_dps=zeros(len,sol.nb_cell_n+sol.nb_cell_p);
+
+            for i = 1:1:len   
+                if i>sol.nb_cell_n && i<=(sol.nb_cell_n+sol.nb_cell_s)
+                    continue
+                end  
+
+                fce   =  obj.LHS_f_ce_single_cell (ce,D,dx,source,i);
+
+                for j = max(1,i):1:min(len,i)
+                    j_eff=j;
+                    if j>sol.nb_cell_n
+                        j_eff=j-sol.nb_cell_s;
+                    end
+ 
+                    cpdc=ps;
+                    if not(ps(j_eff)==0)
+                        cpdc(j_eff)=cpdc(j_eff)*dc_prop;
+                        divider=(ps(j_eff)*(dc_prop-1));
+                    else
+                        cpdc(j_eff)=0.000001;
+                        divider=0.000001;
+                    end
+
+                    if i<=sol.nb_cell_n
+                        csmax=p.csn_max;
+                    else
+                        csmax=p.csp_max;
+                    end
+                    mock_j=BV_fun.butler_volmer_equation(pe,cpdc,ce,cse,T,Ueq,"LHS_Jac_f_Fdiff_cedps");
+                    mock_source = source;
+                    mock_source(i)=obj.update_source_single_cell(i,mock_j,"ce");
+                    
+                    source_used=mock_source;
+                    
+                    fce_diff   =  obj.LHS_f_ce_single_cell (ce,D,dx,source_used,i);
+                    Jac_dfce_dps(i,j_eff)= (fce_diff-fce)/(divider);
+                end
+                
+            end
+                
+        end
+
+
+        function Jac_dfce_dcs = LHS_Jac_f_Fdiff_cedcs(obj,pe,ps,ce,cse,T,Ueq,D,dx,source)            
+            global fv
+            global sol
+            global p
+            global BV_fun
+            mock_source = source;
+            mock_j = fv.j;
+
+            dc_prop=1.0001;
+            len=length(ce);
+            Jac_dfce_dcs=zeros(len,(sol.nb_cell_n+sol.nb_cell_p)*(sol.part_nb_cell+1));
+
+            for i = 1:1:len   
+                if i>sol.nb_cell_n && i<=(sol.nb_cell_n+sol.nb_cell_s)
+                    continue
+                end  
+
+                fce   =  obj.LHS_f_ce_single_cell (ce,D,dx,source,i);
+
+                for j = max(1,i):1:min(len,i)
+                    csmax=p.csn_max;
+                    j_eff=j;
+                    if j>sol.nb_cell_n
+                        csmax=p.csp_max;
+                        j_eff=j-sol.nb_cell_s;
+                    end
+ 
+                    cpdc=cse;
+                    if not(cse(j_eff)==0)
+                        cpdc(j_eff)=min(cpdc(j_eff)*dc_prop,csmax);
+                        divider=(cse(j_eff)*(dc_prop-1));
+                    else
+                        cpdc(j_eff)=0.000001;
+                        divider=0.000001;
+                    end
+
+                    
+                    mock_j=BV_fun.butler_volmer_equation(pe,ps,ce,cpdc,T,Ueq,"LHS_Jac_f_Fdiff_cedcs");
+                    mock_source = source;
+                    mock_source(i)=obj.update_source_single_cell(i,mock_j,"ce");
+                    
+                    source_used=mock_source;
+                    
+                    fce_diff   =  obj.LHS_f_ce_single_cell (ce,D,dx,source_used,i);
+                    Jac_dfce_dcs(i,j_eff*(sol.part_nb_cell+1))= (fce_diff-fce)/(divider);
+                end
+                
+            end
+                
+        end
 
 
         function f = LHS_f_pe_single_cell (obj,p,c,kappa,kappa_D,dx,source,i)
@@ -226,6 +585,156 @@ classdef equation_building_functions
                     if i == j & Jac_fpe(i,j)==0
                         Jac_fpe(i,j)=0.000000001;
                     end
+                end
+            end
+        end
+
+
+        function Jac_fpe = LHS_Jac_f_Fdiff_pedce(obj,pe,ps,ce,cse,T,Ueq,kappa,kappa_D,dx,source)
+            dp_prop=1.0001;
+            len=length(pe);
+            Jac_fpe=zeros(len);
+            
+            global fv
+            global sol
+            global p
+            global BV_fun
+            mock_source = source;
+            mock_j = fv.j;
+
+            for i = 1:1:len        
+                fpe   =  obj.LHS_f_pe_single_cell (pe,ce,kappa,kappa_D,dx,source,i);
+                
+                for j = max(1,i-1):1:min(len,i+1)
+                    ppdp=ce;
+                    if not(ce(j)==0)
+                        ppdp(j)=ppdp(j)*dp_prop;
+                        divider=(ce(j)*(dp_prop-1));
+                    else
+                        ppdp(j)=0.000001;
+                        divider=0.000001;
+                    end
+
+                    if i==j 
+                        if i<=sol.nb_cell_n
+                            csmax=p.csn_max;
+                        else
+                            csmax=p.csp_max;
+                        end
+                        mock_j=BV_fun.butler_volmer_equation(pe,ps,ppdp,cse,T,Ueq,"LHS_Jac_fpe_Fdiff_ce");
+                        mock_source = source;
+                        mock_source(i)=obj.update_source_single_cell(i,mock_j,"pe");
+                    
+                        source_used=mock_source;
+                    else
+                        source_used=source;
+                    end
+
+                    fpe_diff   =  obj.LHS_f_pe_single_cell (pe,ppdp,kappa,kappa_D,dx,source_used,i);
+                    Jac_fpe(i,j)= (fpe_diff-fpe)/(divider);
+                end
+            end
+        end
+
+
+        function Jac_fpe = LHS_Jac_f_Fdiff_pedps(obj,pe,ps,ce,cse,T,Ueq,kappa,kappa_D,dx,source)      
+            global fv
+            global sol
+            global p
+            global BV_fun
+            mock_source = source;
+            mock_j = fv.j;
+
+            dp_prop=1.0001;
+            len=length(pe);
+            Jac_fpe=zeros(len,sol.nb_cell_n+sol.nb_cell_p);
+
+
+            for i = 1:1:len        
+                if i>sol.nb_cell_n && i<=(sol.nb_cell_n+sol.nb_cell_s)
+                    continue
+                end
+
+                fpe   =  obj.LHS_f_pe_single_cell (pe,ce,kappa,kappa_D,dx,source,i);
+                
+                for j = max(1,i):1:min(len,i)
+                    j_eff=j;
+                    if j>sol.nb_cell_n
+                        j_eff=j-sol.nb_cell_s;
+                    end
+ 
+                    ppdp=ps;
+                    if not(ps(j_eff)==0)
+                        ppdp(j_eff)=ppdp(j_eff)*dp_prop;
+                        divider=(ps(j_eff)*(dp_prop-1));
+                    else
+                        ppdp(j_eff)=0.000001;
+                        divider=0.000001;
+                    end
+
+                    if i<=sol.nb_cell_n
+                        csmax=p.csn_max;
+                    else
+                        csmax=p.csp_max;
+                    end
+                    mock_j=BV_fun.butler_volmer_equation(pe,ppdp,ce,cse,T,Ueq,"LHS_Jac_fpe_Fdiff_pedps");
+                    mock_source = source;
+                    mock_source(i)=obj.update_source_single_cell(i,mock_j,"pe");
+                
+                    source_used=mock_source;
+
+                    fpe_diff   =  obj.LHS_f_pe_single_cell (pe,ce,kappa,kappa_D,dx,source_used,i);
+                    Jac_fpe(i,j_eff)= (fpe_diff-fpe)/(divider);
+                end
+            end
+        end
+
+
+        function Jac_dfpe_dcs = LHS_Jac_f_Fdiff_pedcs(obj,pe,ps,ce,cse,T,Ueq,kappa,kappa_D,dx,source)      
+            global fv
+            global sol
+            global p
+            global BV_fun
+            mock_source = source;
+            mock_j = fv.j;
+
+            dp_prop=1.0001;
+            len=length(pe);
+            Jac_dfpe_dcs=zeros(len,(sol.nb_cell_n+sol.nb_cell_p)*(sol.part_nb_cell+1));
+
+            for i = 1:1:len        
+                if i>sol.nb_cell_n && i<=(sol.nb_cell_n+sol.nb_cell_s)
+                    continue
+                end
+
+                fpe   =  obj.LHS_f_pe_single_cell (pe,ce,kappa,kappa_D,dx,source,i);
+                
+                for j = max(1,i):1:min(len,i)
+                    csmax=p.csn_max;
+                    j_eff=j;
+                    if j>sol.nb_cell_n
+                        csmax=p.csp_max;
+                        j_eff=j-sol.nb_cell_s;
+                    end
+ 
+                    ppdp=cse;
+                    if not(cse(j_eff)==0)
+                        ppdp(j_eff)=min(ppdp(j_eff)*dp_prop,csmax);
+                        divider=(cse(j_eff)*(dp_prop-1));
+                    else
+                        ppdp(j_eff)=0.000001;
+                        divider=0.000001;
+                    end
+
+
+                    mock_j=BV_fun.butler_volmer_equation(pe,ps,ce,ppdp,T,Ueq,"LHS_Jac_fpe_Fdiff_pedcs");
+                    mock_source = source;
+                    mock_source(i)=obj.update_source_single_cell(i,mock_j,"pe");
+                
+                    source_used=mock_source;
+
+                    fpe_diff   =  obj.LHS_f_pe_single_cell (pe,ce,kappa,kappa_D,dx,source_used,i);
+                    Jac_dfpe_dcs(i,j_eff*(sol.part_nb_cell+1))= (fpe_diff-fpe)/(divider);
                 end
             end
         end
@@ -310,6 +819,164 @@ classdef equation_building_functions
                 end 
             end 
         end
+
+        function Jac_fps = LHS_Jac_f_Fdiff_psdpe(obj,pe,ps,ce,cse,T,Ueq,D,dx,source,separator_index,source_BC)
+            global fv
+            global sol
+            global p
+            global BV_fun
+            mock_source = source;
+            mock_j = fv.j;
+
+            dp_prop=1.0001;
+            len=length(ps);
+            Jac_fps=zeros(len,sol.nb_cell);
+
+            for i = 1:1:len        
+                fps   =  obj.LHS_f_ps_single_cell (ps,ce,D,dx,source,i,separator_index,source_BC,0);
+
+                for j = max(1,i):1:min(len,i)
+                    if i<=sol.nb_cell_n
+                        csmax=p.csn_max;
+                        indexjacps=i;
+                    else
+                        csmax=p.csp_max;
+                        indexjacps=i+sol.nb_cell_s;
+                    end
+
+                    ppdp=pe;
+                    if not(pe(indexjacps)==0)
+                        ppdp(indexjacps)=ppdp(indexjacps)*dp_prop;
+                        divider=(pe(indexjacps)*(dp_prop-1));
+                    else
+                        ppdp(indexjacps)=0.000001;
+                        divider=0.000001;
+                    end
+
+                    if i==j 
+                        mock_j=BV_fun.butler_volmer_equation(ppdp,ps,ce,cse,T,Ueq,"LHS_Jac_f_Fdiff_psdpe");
+                        mock_source = source;
+                        mock_source(i)=obj.update_source_single_cell(indexjacps,mock_j,"ps");
+                    
+                        source_used=mock_source;
+                    else
+                        source_used=source;
+                    end
+
+                    fps_diff   =  obj.LHS_f_ps_single_cell (ps,ce,D,dx,source_used,i,separator_index,source_BC,0);
+                    Jac_fps(i,j)= (fps_diff-fps)/(divider);
+
+                    if i == j & Jac_fps(i,j)==0
+                        Jac_fps(i,j)=0.000000001;
+                    end
+                end 
+            end 
+        end
+
+        function Jac_fps = LHS_Jac_f_Fdiff_psdce(obj,pe,ps,ce,cse,T,Ueq,D,dx,source,separator_index,source_BC)
+            global fv
+            global sol
+            global p
+            global BV_fun
+            mock_source = source;
+            mock_j = fv.j;
+
+            dp_prop=1.0001;
+            len=length(ps);
+            Jac_fps=zeros(len,sol.nb_cell);
+
+            for i = 1:1:len        
+                fps   =  obj.LHS_f_ps_single_cell (ps,ce,D,dx,source,i,separator_index,source_BC,0);
+
+                for j = max(1,i):1:min(len,i)
+                    if i<=sol.nb_cell_n
+                        csmax=p.csn_max;
+                        indexjacps=i;
+                    else
+                        csmax=p.csp_max;
+                        indexjacps=i+sol.nb_cell_s;
+                    end
+
+                    ppdp=ce;
+                    if not(ce(indexjacps)==0)
+                        ppdp(indexjacps)=ppdp(indexjacps)*dp_prop;
+                        divider=(ce(indexjacps)*(dp_prop-1));
+                    else
+                        ppdp(indexjacps)=0.000001;
+                        divider=0.000001;
+                    end
+
+                    if i==j 
+                        mock_j=BV_fun.butler_volmer_equation(pe,ps,ppdp,cse,T,Ueq,"LHS_Jac_f_Fdiff_psdce");
+                        mock_source = source;
+                        mock_source(i)=obj.update_source_single_cell(indexjacps,mock_j,"ps");
+                    
+                        source_used=mock_source;
+                    else
+                        source_used=source;
+                    end
+
+                    fps_diff   =  obj.LHS_f_ps_single_cell (ps,ce,D,dx,source_used,i,separator_index,source_BC,0);
+                    Jac_fps(i,j)= (fps_diff-fps)/(divider);
+
+                    if i == j & Jac_fps(i,j)==0
+                        Jac_fps(i,j)=0.000000001;
+                    end
+                end 
+            end 
+        end
+
+
+        function Jac_dfps_dcs = LHS_Jac_f_Fdiff_psdcs(obj,pe,ps,ce,cse,T,Ueq,D,dx,source,separator_index,source_BC)      
+            global fv
+            global sol
+            global p
+            global BV_fun
+            mock_source = source;
+            mock_j = fv.j;
+
+            dp_prop=1.0001;
+            len=length(ps);
+            len2=length(pe);
+            Jac_dfps_dcs=zeros(len,(sol.nb_cell_n+sol.nb_cell_p)*(sol.part_nb_cell+1));
+
+            for i = 1:1:len2        
+                if i>sol.nb_cell_n && i<=(sol.nb_cell_n+sol.nb_cell_s)
+                    continue
+                end
+                
+                for j = max(1,i):1:min(len,i)
+                    csmax=p.csn_max;
+                    j_eff=j;
+                    if j>sol.nb_cell_n
+                        csmax=p.csp_max;
+                        j_eff=j-sol.nb_cell_s;
+                    end
+
+                    fps   =  obj.LHS_f_ps_single_cell (ps,ce,D,dx,source,j_eff,separator_index,source_BC,0);
+
+                    ppdp=cse;
+                    if not(cse(j_eff)==0)
+                        ppdp(j_eff)=min(ppdp(j_eff)*dp_prop,csmax);
+                        divider=(cse(j_eff)*(dp_prop-1));
+                    else
+                        ppdp(j_eff)=0.000001;
+                        divider=0.000001;
+                    end
+
+
+                    mock_j=BV_fun.butler_volmer_equation(pe,ps,ce,ppdp,T,Ueq,"LHS_Jac_fps_Fdiff_psdcs");
+                    mock_source = source;
+                    mock_source(j_eff)=obj.update_source_single_cell(i,mock_j,"ps");
+                
+                    source_used=mock_source;
+
+                    fps_diff   =  obj.LHS_f_ps_single_cell (ps,ce,D,dx,source_used,j_eff,separator_index,source_BC,0);
+                    Jac_dfps_dcs(j_eff,j_eff*(sol.part_nb_cell+1))= (fps_diff-fps)/(divider);
+                end
+            end
+        end
+
 
         function [De,kappa_eff, kappa_D_eff] = update_param_functions (obj,ce,cse) 
             global p
