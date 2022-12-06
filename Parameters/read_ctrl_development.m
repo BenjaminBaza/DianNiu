@@ -62,9 +62,9 @@ function read_ctrl_development()
     sol.min_allowed_voltage = 2.4 ; %[V] (Not used in the solver at the moment)
     sol.max_allowed_voltage_time_differential = 2.;
 
-    sol.nb_cell_n   = 20;%30;%50;
+    sol.nb_cell_n   = 10;%30;%50;
     sol.nb_cell_s   = 3;%20;%50;
-    sol.nb_cell_p   = 20;%30;%50;
+    sol.nb_cell_p   = 10;%30;%50;
     sol.nb_cell     = sol.nb_cell_n + sol.nb_cell_s + sol.nb_cell_p ;   %
 
     sol.dxn         = p.Ln/sol.nb_cell_n;
@@ -89,7 +89,7 @@ function read_ctrl_development()
     sol.cell_center_coord_solid  = cat(1,sol.cell_center_coord(1:sol.nb_cell_n),sol.cell_center_coord(sol.nb_cell_n+sol.nb_cell_s+1:sol.nb_cell_n+sol.nb_cell_s+sol.nb_cell_p));
 
 
-    sol.part_nb_cell= 80;%20;
+    sol.part_nb_cell= 9;%20;
     sol.particle_mesh_distribution_order= 2.0;
     particle_mesh_generator()
 
@@ -102,7 +102,7 @@ function read_ctrl_development()
 
     global deb
 
-    deb.prints=0;
+    deb.prints=1;
     deb.run_name= "LGM50";
     deb.videos_generation=0;
     deb.plot_data=1;
@@ -114,10 +114,10 @@ function read_ctrl_development()
     deb.folder_name=datestr(now,'mm_dd_yy_')+deb.run_name+'_'+num2str(sol.nb_cell_n)+'x'+num2str(sol.nb_cell_s)+'x'+num2str(sol.nb_cell_p)+'p'+num2str(sol.part_nb_cell)+'_save_';
 
     save_nb=1;
-    while exist('./Saved_data/'+deb.folder_name+num2str(save_nb), 'dir')
+    while exist('../Saved_data_DFN_DianNiu/'+deb.folder_name+num2str(save_nb), 'dir')
         save_nb=save_nb+1;
     end
-    deb.folder_name=append('./Saved_data/',deb.folder_name+num2str(save_nb));
+    deb.folder_name=append('../Saved_data_DFN_DianNiu/',deb.folder_name+num2str(save_nb));
     deb.graph_folder_name=deb.folder_name+'/Graphs/';
 
     %% Material characteristics

@@ -279,15 +279,26 @@ classdef newton_solver_functions
                 Newton_method_version=1;
                 if Newton_method_version==1 || (Newton_method_version==2 && newt_ite==1) % Original Newton method
                     delta_coupled = (Jac_coupled) \ (-g_coupled);
-                else if Newton_method_version==2  % McDougall 2019
+                
+                elseif Newton_method_version==2  % McDougall 2019
                     delta_interm = (Jac_coupled) \ (-g_coupled);
-                    Aest2=ones(length(delta_interm));
-                    F=0.5 + sqrt(max(0 , 0.25 - Aest2*delta));
+
+                    Aest2_up    = 3*(g_coupled_m1 - g_coupled) * transpose(- ones(length(delta_coupled),1) ./ delta_coupled) - Jac_coupled_m1 - 2*Jac_coupled;
+                    Aest2_down  = transpose(-delta_coupled) *Jac_coupled;
+                    Aest2= Aest2_up * transpose(ones(1,length(Aest2_down))./Aest2_down) ;
+
+                    F=0.5 + sqrt(max(0 , 0.25 - abs(dot(Aest2,transpose(delta_interm)))));
                     delta_coupled = delta_interm/F;
                 end
 
+
+                if Newton_method_version==2
+                    g_coupled_m1    = g_coupled;
+                    Jac_coupled_m1  = Jac_coupled;
+                end
+
+
                 %delta_coupled = linsolve(Jac_coupled,-g_coupled);
-                
                 
                 %delta_csn = linsolve(Jac_gcsn,-gcsn);
                 %delta_csp = linsolve(Jac_gcsp,-gcsp);
@@ -316,7 +327,7 @@ classdef newton_solver_functions
                 hist.residuals(5,newt_ite)=norm_delta_csn;
                 hist.residuals(6,newt_ite)=norm_delta_csp;
 
-                if (deb.prints>=1) && (isnan(norm_delta_coupled)==1 | isreal(norm_delta_coupled)==0)
+                if (deb.prints>=2) && (isnan(norm_delta_coupled)==1 | isreal(norm_delta_coupled)==0)
                     
 
                     disp("DEBUG BEN j ------------------------------ newt_ite="+num2str(newt_ite)+" , time ite="+num2str(sol.time_ite))
@@ -575,7 +586,7 @@ classdef newton_solver_functions
                     end 
                 end
 
-                if deb.prints>=1
+                if deb.prints>=2
                     
                     disp("newt_ite="+num2str(newt_ite)+" sol.time_ite="+num2str(sol.time_ite)+" residuals: coupled="+num2str(norm_delta_coupled)+" , ps="+num2str(norm_delta_ps)+" , pe="+num2str(norm_delta_pe) ...
                                                                              +" , ce="+num2str(norm_delta_ce)+" , csn="+num2str(norm_delta_csn)+" , csp="+num2str(norm_delta_csp))
@@ -588,10 +599,10 @@ classdef newton_solver_functions
                 if (norm_delta_coupled<newt_lim) && newt_ite>1
                     
                     if deb.prints>=1
-                        disp("Newton method for the coupled system has converged:"+num2str(newt_ite)+" , "+num2str(norm_delta_coupled) ...
+                        disp("Newton method for the coupled system converged:"+num2str(newt_ite)+" , "+num2str(norm_delta_coupled) ...
                                                                             +" , "+num2str(norm_delta_ps)+" , "+num2str(norm_delta_pe) ...
                                                                             +" , "+num2str(norm_delta_ce)+" , "+num2str(norm_delta_csn)+" , "+num2str(norm_delta_csp) ...
-                                                                            +" , "+num2str(-(log10(max(hist.residuals(1,:)))-log10(min(hist.residuals(1,1:newt_ite))))) ...
+                                                                            +" , and "+num2str(-(log10(max(hist.residuals(1,:)))-log10(min(hist.residuals(1,1:newt_ite))))) ...
                                                                             +" , "+num2str(max(hist.residuals(1,:))) +" , "+num2str(min(hist.residuals(1,1:newt_ite))))
                     end
                     break
