@@ -10,12 +10,25 @@ classdef BV_functions
 			j=zeros(1,len);
 
 			cseloc=cse;
-			%cseloc=min(cse, csmax);
-			if cse>csmax
-				disp("DEBUG BEN BV eq cse>csmax "+num2str(cse)+"  "+num2str(csmax))
-			end
+			%cseloc=max(min(cse, csmax),0);
+			%if cse>csmax
+			%	disp("DEBUG BEN BV eq cse>csmax "+num2str(cse)+"  "+num2str(csmax))
+			%end
 			
-			i0=F*k0*ce^(1-alpha)*(csmax-cseloc)^(1-alpha)*cseloc^alpha;
+			if ce<0
+				ce_term= - (-ce)^(1-alpha);
+			else
+				ce_term= ce^(1-alpha);
+			end
+
+			if cseloc<0
+				i0= F*k0* ce_term * (csmax-cseloc)^(1-alpha)		* (-(-cseloc)^alpha);				
+			elseif cseloc>csmax
+				i0= F*k0* ce_term * (-(-(csmax-cseloc))^(1-alpha))	* cseloc^alpha;
+			else
+				i0= F*k0* ce_term * (csmax-cseloc)^(1-alpha)		* cseloc^alpha;
+			end
+
 			nu=ps-pe-Ueq; %Could add the ionic resistance of the film layer (+F*Rfilm*j(i)) and iterate to find the combined vaues of nu and j
 			nu=max(-maxnu,min(nu,maxnu));
 			j=i0/F* (exp((1-alpha)*F*nu/(R*T)) - exp((-alpha)*F*nu/(R*T)));
@@ -55,26 +68,27 @@ classdef BV_functions
 					end
 				end
 
-				if i>sol.nb_cell_n+sol.nb_cell_s || i<=sol.nb_cell_n
+				if (i>sol.nb_cell_n+sol.nb_cell_s || i<=sol.nb_cell_n)
 					if ((abs(j(i))>10^10 || isnan(j(i))==1 || deb.prints>=5 )&& not(contains(ID,"LHS_Jac_")))
-						disp("DEBUG BEN BV eq ID="+ID)
-						disp(num2str(i)+"  "+num2str(nu)+"  "+num2str(j(i))+"  "+num2str((exp((1-p.alpha)*p.Faraday*nu/(p.Rg*T)) - exp((-p.alpha)*p.Faraday*nu/(p.Rg*T)))) ...
-							+"  "+num2str((exp((1-p.alpha)*p.Faraday*nu/(p.Rg*T)) ))+"  "+num2str((-exp((-p.alpha)*p.Faraday*nu/(p.Rg*T))))+"   "+ ...
-							num2str((exp((1-p.alpha)*p.Faraday*(3*10^1)/(p.Rg*T)) - exp((-p.alpha)*p.Faraday*(3*10^1)/(p.Rg*T))))+"   "+ ...
-							num2str((exp((1-p.alpha)*p.Faraday*(-3*10^1)/(p.Rg*T)) - exp((-p.alpha)*p.Faraday*(-3*10^1)/(p.Rg*T)))))
+						if deb.prints>=1
+							disp("DEBUG BEN BV eq ID="+ID)
+							disp(num2str(i)+"  "+num2str(nu)+"  "+num2str(j(i))+"  "+num2str((exp((1-p.alpha)*p.Faraday*nu/(p.Rg*T)) - exp((-p.alpha)*p.Faraday*nu/(p.Rg*T)))) ...
+								+"  "+num2str((exp((1-p.alpha)*p.Faraday*nu/(p.Rg*T)) ))+"  "+num2str((-exp((-p.alpha)*p.Faraday*nu/(p.Rg*T))))+"   "+ ...
+								num2str((exp((1-p.alpha)*p.Faraday*(3*10^1)/(p.Rg*T)) - exp((-p.alpha)*p.Faraday*(3*10^1)/(p.Rg*T))))+"   "+ ...
+								num2str((exp((1-p.alpha)*p.Faraday*(-3*10^1)/(p.Rg*T)) - exp((-p.alpha)*p.Faraday*(-3*10^1)/(p.Rg*T)))))
 
-						disp(num2str((1-p.alpha)*p.Faraday/(p.Rg*T))+"  "+num2str((p.Rg*T))+"  "+num2str((1-p.alpha)*nu*p.Faraday/(p.Rg*T)))
+							disp(num2str((1-p.alpha)*p.Faraday/(p.Rg*T))+"  "+num2str((p.Rg*T))+"  "+num2str((1-p.alpha)*nu*p.Faraday/(p.Rg*T)))
 
-						disp(num2str(i)+"  "+num2str(i0)+"   "+num2str(ce(i)^(1-p.alpha))+"   "+num2str(ce(i))+"   "+ num2str((p.csp_max-cseloc)^(1-p.alpha)*cseloc^p.alpha)+"  "+num2str(p.k0)+"  "+num2str(p.Faraday))
+							disp(num2str(i)+"  "+num2str(i0)+"   "+num2str(ce(i)^(1-p.alpha))+"   "+num2str(ce(i))+"   "+ num2str((p.csp_max-cseloc)^(1-p.alpha)*cseloc^p.alpha)+"  "+num2str(p.k0)+"  "+num2str(p.Faraday))
 
-						disp(num2str(i)+"  "+num2str(nu)+"  "+num2str(Ueq(i))+"  "+num2str(ps(indloc))+"  "+num2str(pe(i)))
+							disp(num2str(i)+"  "+num2str(nu)+"  "+num2str(Ueq(i))+"  "+num2str(ps(indloc))+"  "+num2str(pe(i)))
 
-						disp(transpose(Ueq))
-						disp(transpose(pe))
-						disp(transpose(ps))
-						disp(transpose(ce))
-						disp((cse))
-
+							disp(transpose(Ueq))
+							disp(transpose(pe))
+							disp(transpose(ps))
+							disp(transpose(ce))
+							disp((cse))
+						end
 						if abs(j(i))>10^10
 							j(i)=10^10;
 						end
