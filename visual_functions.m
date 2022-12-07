@@ -736,15 +736,15 @@ classdef visual_functions
 
 
             
-            if sum(isnan(hist.j(:,iteration+1)))==0 && sum(isinf(hist.j(:,iteration+1)))==0
+            if sum(isnan(hist.j(:,iteration)))==0 && sum(isinf(hist.j(:,iteration)))==0
                 subplot(5,5,[16,17])
 
                 cla;
-                plot(x(1:nnb),hist.j(1:nnb,iteration+1),'LineWidth',2);
-                if max(hist.j(1:nnb,iteration+1))==0
-                    ylim([min(hist.j(1:nnb,iteration+1)) 0.00000000001]);
+                plot(x(1:nnb),hist.j(1:nnb,iteration),'LineWidth',2);
+                if max(hist.j(1:nnb,iteration))==0
+                    ylim([min(hist.j(1:nnb,iteration)) 0.00000000001]);
                 else
-                    ylim([min(hist.j(1:nnb,iteration+1)) max(max(hist.j(1:nnb,iteration+1)),min(hist.j(1:nnb,iteration+1))+abs(min(hist.j(1:nnb,iteration+1)))*0.00001+0.00000001)]);
+                    ylim([min(hist.j(1:nnb,iteration)) max(max(hist.j(1:nnb,iteration)),min(hist.j(1:nnb,iteration))+abs(min(hist.j(1:nnb,iteration)))*0.00001+0.00000001)]);
                 end
                 ylabel('j','FontSize',fs);
                 xlabel('x','FontSize',fs);
@@ -757,11 +757,11 @@ classdef visual_functions
                 subplot(5,5,[19,20])
 
                 cla;
-                plot(x(nnb+snb+1:nnb+snb+pnb),hist.j(nnb+snb+1:nnb+snb+pnb,iteration+1),'LineWidth',2);
-                if max(hist.j(nnb+snb+1:nnb+snb+pnb,iteration+1))==0
-                    ylim([min(hist.j(nnb+snb+1:nnb+snb+pnb,iteration+1)) 0.00000000001]);
+                plot(x(nnb+snb+1:nnb+snb+pnb),hist.j(nnb+snb+1:nnb+snb+pnb,iteration),'LineWidth',2);
+                if max(hist.j(nnb+snb+1:nnb+snb+pnb,iteration))==0
+                    ylim([min(hist.j(nnb+snb+1:nnb+snb+pnb,iteration)) 0.00000000001]);
                 else
-                    ylim([min(hist.j(nnb+snb+1:nnb+snb+pnb,iteration+1)) max(max(hist.j(nnb+snb+1:nnb+snb+pnb,iteration+1)),min(hist.j(nnb+snb+1:nnb+snb+pnb,iteration+1))+abs(min(hist.j(nnb+snb+1:nnb+snb+pnb,iteration+1)))*0.0001+0.00000001)]);
+                    ylim([min(hist.j(nnb+snb+1:nnb+snb+pnb,iteration)) max(max(hist.j(nnb+snb+1:nnb+snb+pnb,iteration)),min(hist.j(nnb+snb+1:nnb+snb+pnb,iteration))+abs(min(hist.j(nnb+snb+1:nnb+snb+pnb,iteration)))*0.0001+0.00000001)]);
                 end
                 ylabel('j','FontSize',fs);
                 xlabel('x','FontSize',fs);

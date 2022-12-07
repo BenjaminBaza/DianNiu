@@ -38,7 +38,7 @@ function read_ctrl_development()
     % Specific interfacial surface area
     p.coll_A_n = 0.1027; % negative electrode current collector area [m^2]
     p.coll_A_p = 0.1027; % positive electrode current collector area [m^2]
-    p.R_collector_contact=0;	%current collector total contact resistance [V.A^(-1)] [Ohm]
+    p.R_collector_contact=0;	% Current collector total contact resistance [V.A^(-1)] [Ohm]
     p.A_s_n = 3*p.eps_s_n / p.R_s_n;  % Negative electrode specific interfacial surface area [m^2/m^3]
     p.A_s_p = 3*p.eps_s_p / p.R_s_p;  % Positive electrode specific interfacial surface area [m^2/m^3]
 
@@ -51,20 +51,20 @@ function read_ctrl_development()
     sol.time_ite = 0;
 
 
-    sol.time_tot    = 4000.0; %10800;                     %Total time of the simulation [s]
+    sol.time_tot    = 4200.0; %10800;                     %Total time of the simulation [s]
     sol.time        = 0.0; %10800;                     %Total time of the simulation [s]
     sol.dt          = 0.    ;%1.                        %Time step for the time discretization [s]
     sol.max_dt      = 10.    ;%1.                        %Time step for the time discretization [s]
-    sol.time_array  = zeros(1,1000000) ; %sol.dt:sol.dt:sol.time_tot;  % array containing the time coordinate of each time step (may be redundant)
-    sol.nb_steps    = 1000000 ; %length(sol.time_array);    % Number of time states visited throughout the simulation
+    sol.nb_steps    = 10000 ; %length(sol.time_array);    % Number of time states visited throughout the simulation
+    sol.time_array  = zeros(1,sol.nb_steps) ; %sol.dt:sol.dt:sol.time_tot;  % array containing the time coordinate of each time step (may be redundant)
 
     sol.max_allowed_voltage = 4.40 ; %[V] (Not used in the solver at the moment)
     sol.min_allowed_voltage = 2.4 ; %[V] (Not used in the solver at the moment)
     sol.max_allowed_voltage_time_differential = 2.;
 
-    sol.nb_cell_n   = 10;%30;%50;
+    sol.nb_cell_n   = 20;%30;%50;
     sol.nb_cell_s   = 3;%20;%50;
-    sol.nb_cell_p   = 10;%30;%50;
+    sol.nb_cell_p   = 20;%30;%50;
     sol.nb_cell     = sol.nb_cell_n + sol.nb_cell_s + sol.nb_cell_p ;   %
 
     sol.dxn         = p.Ln/sol.nb_cell_n;
@@ -89,7 +89,7 @@ function read_ctrl_development()
     sol.cell_center_coord_solid  = cat(1,sol.cell_center_coord(1:sol.nb_cell_n),sol.cell_center_coord(sol.nb_cell_n+sol.nb_cell_s+1:sol.nb_cell_n+sol.nb_cell_s+sol.nb_cell_p));
 
 
-    sol.part_nb_cell= 9;%20;
+    sol.part_nb_cell= 19;%20;
     sol.particle_mesh_distribution_order= 2.0;
     particle_mesh_generator()
 
@@ -102,22 +102,44 @@ function read_ctrl_development()
 
     global deb
 
-    deb.prints=1;
+    deb.prints=0;
     deb.run_name= "LGM50";
     deb.videos_generation=0;
     deb.plot_data=1;
     deb.animate_data=0;
     deb.safe_BC_mode=0;
     deb.break_time_loop=0;
-    deb.write_output_data=0;
+    deb.write_output_data=2; %1 to write final data, 2 to write all history data
+    deb.chrono_matrix_inversion=0;
+    deb.chrono_newtsol_setup=0;
+    deb.chrono_newtsol_update=0;
+    deb.chrono_matrix_inversion_singleite=0;
+    deb.chrono_newtsol_setup_singleite=0;
+    deb.chrono_newtsol_update_singleite=0;
 
-    deb.folder_name=datestr(now,'mm_dd_yy_')+deb.run_name+'_'+num2str(sol.nb_cell_n)+'x'+num2str(sol.nb_cell_s)+'x'+num2str(sol.nb_cell_p)+'p'+num2str(sol.part_nb_cell)+'_save_';
+    deb.chrono_updt_dtso_singleite=0;
+    deb.chrono_Calc_Jac_singleite=0;
+    deb.chrono_Calc_f_singleite=0;
+    deb.chrono_Calc_gJacg_singleite=0;
+    deb.chrono_assemble_coupled_singleite=0;
+
+    deb.chrono_Jacdiag_singleite = 0;
+    deb.chrono_Jacce_singleite = 0;
+    deb.chrono_Jacpe_singleite = 0;
+    deb.chrono_Jacps_singleite = 0;
+    deb.chrono_Jaccsn_singleite = 0;
+    deb.chrono_Jaccsp_singleite = 0;
+    deb.chrono_Jaccedce_singleite = 0;
+
+    deb.case_name=datestr(now,'mm_dd_yy_')+deb.run_name+'_'+num2str(sol.nb_cell_n)+'x'+num2str(sol.nb_cell_s)+'x'+num2str(sol.nb_cell_p)+'p'+num2str(sol.part_nb_cell)+'_save_';
 
     save_nb=1;
-    while exist('../Saved_data_DFN_DianNiu/'+deb.folder_name+num2str(save_nb), 'dir')
+    while exist('../Saved_data_DFN_DianNiu/'+deb.case_name+num2str(save_nb), 'dir')
         save_nb=save_nb+1;
     end
-    deb.folder_name=append('../Saved_data_DFN_DianNiu/',deb.folder_name+num2str(save_nb));
+    deb.case_name=deb.case_name+num2str(save_nb);
+    deb.folder_name=append('../Saved_data_DFN_DianNiu/',deb.case_name);
+    deb.read_ctrl_file_name = 'Parameters/read_ctrl_development.m' ;
     deb.graph_folder_name=deb.folder_name+'/Graphs/';
 
     %% Material characteristics
@@ -139,10 +161,10 @@ function read_ctrl_development()
 
 
     % Constants
-    p.k0 = 1e-10 * [0.0672,0.3545] ;			% Effective reaction rates (in the negative electrode first and in the positive second) [mol^−1/2 .m^5/2 .s−1]
+    p.k0 = 1e-10 * [0.0672,0.3545] ;	% Effective reaction rates (in the negative electrode first and in the positive second) [mol^−1/2 .m^5/2 .s−1]
     p.alpha	=0.5 ;			% Asymmetric charge-transfer coefficient
     p.brug = 1.5 ;       	% Bruggeman porosity
-    p.t_plus_function_mode=0; %The transference number is handled as a function 1 or as a constant 0
+    p.t_plus_function_mode=0 ; %The transference number is handled as a function 1 or as a constant 0
     p.t_plus = 0.2590 ;       	% Transference number
     p.Faraday = 96487 ;    	% Faraday constant, [Coulumbs/mol]  [s.A/mol]  [kg.m^2.s^-2.V^-1/mol]
     p.Rg = 8.3145 ;			% Perfect gas constant [j.mol/K]  [kg.m^2.s^-2/mol/K]
@@ -196,7 +218,6 @@ function read_ctrl_development()
     ex.temporary_Crate = 100000 ; 
     ex.I_array  = 5.000 * ones(size(sol.time_array)) ; %0.5 * ones(size(sol.time_array));%ex.temporary_Crate*ones(size(sol.time_array));  % Array containing the input current intensity at each time step (may be redundant)
     % 1C=5A
-    % ex.I_array(315:length(sol.time_array)) = 0 ;
 
 
     %% Initial conditions
@@ -316,6 +337,7 @@ function read_ctrl_development()
     hist.V   = zeros(1,sol.nb_steps);
     hist.SOC_neg   = zeros(1,sol.nb_steps);
     hist.SOC_pos   = zeros(1,sol.nb_steps);
+    hist.charge_time=0;
 
     hist.csn(:,1) = reshape(fv.csn,sol.nb_cell_n*(sol.part_nb_cell+1),1);
     hist.csp(:,1) = reshape(fv.csp,sol.nb_cell_p*(sol.part_nb_cell+1),1);

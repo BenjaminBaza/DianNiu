@@ -15,5 +15,4 @@ function save_fv_to_hist(ite)
     hist.SOC_neg(ite)       = fv.SOC_neg;
     hist.SOC_pos(ite)       = fv.SOC_pos;
 
-
 end

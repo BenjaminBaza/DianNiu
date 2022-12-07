@@ -55,7 +55,7 @@ function main()
     %%%%%%%%%%%%%%%%% Write data
     write_timer=tic;
 
-    if deb.write_output_data==1
+    if deb.write_output_data>=1
         save_data();
     end
 
@@ -102,8 +102,14 @@ function main()
 
     %%%%%%%%%%%%%%%%% Stop timer
     chrono = toc(main_timer);
-    fprintf(1,'End of simulation \nThe full program takes %3.2f sec, \nread section %3.2f sec, \nsolver section %3.2f sec, \nplot section %3.2f sec, \nvideo section %3.2f sec, \nwrite section %3.2f sec\n' ...
-                                                ,chrono,read_chrono,solver_chrono,plot_chrono,video_chrono,write_chrono);
+    fprintf(1,'End of simulation \n\nThe full program takes %3.2f sec \nread section %3.2f sec \nsolver section %3.2f sec \nplot section %3.2f sec \nvideo section %3.2f sec \nwrite section %3.2f sec\n\n' ...
+                                                , chrono, read_chrono, solver_chrono, plot_chrono, video_chrono, write_chrono);
+    fprintf(1,'Total time of solver setup %3.2f sec \nTotal time of matrix inversion %3.2f sec \nTotal time of solver update %3.2f sec \nTotal time in solver iteration %3.2f sec \n' ...
+                                                , deb.chrono_newtsol_setup, deb.chrono_matrix_inversion, deb.chrono_newtsol_update...
+                                                , deb.chrono_newtsol_setup+deb.chrono_matrix_inversion+deb.chrono_newtsol_update);
+deb.chrono_matrix_inversion=0;
+deb.chrono_newtsol_setup=0;
+deb.chrono_newtsol_update=0;
 
     clear video_chrono video_timer main_timer read_chrono read_timer solver_chrono solver_timer write_chrono write_timer chrono
     clear plot_chrono plot_timer pe_next_save ps_next_save M_electrlyte_diff Mn_part_diff Mp_part_diff csp_next csn_next ce_next_save sol.time_ite sol.time_ite_save
