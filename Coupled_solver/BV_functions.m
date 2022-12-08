@@ -2,18 +2,55 @@
 classdef BV_functions
     methods
 
-		function [j,nu,i0]= butler_volmer_singlecell(obj,pe,ps,ce,cse,k0,alpha,F,R,T,Ueq,Rfilm,csmax)
+    	function [j,nu,i0]= butler_volmer_singlecell_standalone(obj,i,pe,ps,ce,cse,Ueq)
+			global eq_build_fun
 			global deb
-			nu=1;
-			maxnu=10^6;
-			len=length(ce);
-			j=zeros(1,len);
+			global sol
+			global ini
+			global p
+			
+			if sol.nb_cell_n< i && i<=sol.nb_cell_n+sol.nb_cell_s
+				j=0;
+				nu=0;
+				i0=0;
+				return
+			end
 
-			cseloc=cse;
-			%cseloc=max(min(cse, csmax),0);
-			%if cse>csmax
-			%	disp("DEBUG BEN BV eq cse>csmax "+num2str(cse)+"  "+num2str(csmax))
-			%end
+			maxnu=10^6;
+			k0_loc=1;
+			csmax=p.csn_max;
+			if i>sol.nb_cell_n
+				k0_loc=2;
+				csmax=p.csp_max;
+			end
+
+			ps_ind=eq_build_fun.pe2ps_index(i);
+			
+			if ce(i)<0
+				ce_term= - (-ce(i))^(1-p.alpha);
+			else
+				ce_term= ce(i)^(1-p.alpha);
+			end
+
+			if cse(ps_ind)<0
+				i0= p.Faraday*p.k0(k0_loc)* ce_term * (csmax-cse(ps_ind))^(1-p.alpha)		* (-(-cse(ps_ind))^p.alpha);				
+			elseif cse(ps_ind)>csmax
+				i0= p.Faraday*p.k0(k0_loc)* ce_term * (-(-(csmax-cse(ps_ind)))^(1-p.alpha))	* cse(ps_ind)^p.alpha;
+			else
+				i0= p.Faraday*p.k0(k0_loc)* ce_term * (csmax-cse(ps_ind))^(1-p.alpha)		* cse(ps_ind)^p.alpha;
+			end
+
+			nu=ps(ps_ind)-pe(i)-Ueq(i); %Could add the ionic resistance of the film layer (+F*Rfilm*j(i)) and iterate to find the combined vaues of nu and j
+			nu=max(-maxnu,min(nu,maxnu));
+			j=i0/p.Faraday* (exp((1-p.alpha)*p.Faraday*nu/(p.Rg*ini.T0)) - exp((-p.alpha)*p.Faraday*nu/(p.Rg*ini.T0)));
+		end
+
+
+		function [j,nu,i0]= butler_volmer_singlecell(obj,pe,ps,ce,cse,k0,alpha,F,R,T,Ueq,Rfilm,csmax)
+			global eq_build_fun
+			global deb
+			
+			maxnu=10^6;
 			
 			if ce<0
 				ce_term= - (-ce)^(1-alpha);
@@ -21,18 +58,21 @@ classdef BV_functions
 				ce_term= ce^(1-alpha);
 			end
 
-			if cseloc<0
-				i0= F*k0* ce_term * (csmax-cseloc)^(1-alpha)		* (-(-cseloc)^alpha);				
-			elseif cseloc>csmax
-				i0= F*k0* ce_term * (-(-(csmax-cseloc))^(1-alpha))	* cseloc^alpha;
+			if cse<0
+				i0= F*k0* ce_term * (csmax-cse)^(1-alpha)		* (-(-cse)^alpha);				
+			elseif cse>csmax
+				i0= F*k0* ce_term * (-(-(csmax-cse))^(1-alpha))	* cse^alpha;
 			else
-				i0= F*k0* ce_term * (csmax-cseloc)^(1-alpha)		* cseloc^alpha;
+				i0= F*k0* ce_term * (csmax-cse)^(1-alpha)		* cse^alpha;
 			end
 
 			nu=ps-pe-Ueq; %Could add the ionic resistance of the film layer (+F*Rfilm*j(i)) and iterate to find the combined vaues of nu and j
 			nu=max(-maxnu,min(nu,maxnu));
 			j=i0/F* (exp((1-alpha)*F*nu/(R*T)) - exp((-alpha)*F*nu/(R*T)));
 		end
+
+
+
 	
 
 

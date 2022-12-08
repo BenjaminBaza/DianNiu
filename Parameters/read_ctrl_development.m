@@ -129,7 +129,11 @@ function read_ctrl_development()
     deb.chrono_Jacps_singleite = 0;
     deb.chrono_Jaccsn_singleite = 0;
     deb.chrono_Jaccsp_singleite = 0;
+
     deb.chrono_Jaccedce_singleite = 0;
+    deb.chrono_Jacpedpe_singleite = 0;
+    deb.chrono_Jacpsdps_singleite = 0;
+    deb.chrono_Jaccsdcs_singleite = 0;
 
     deb.case_name=datestr(now,'mm_dd_yy_')+deb.run_name+'_'+num2str(sol.nb_cell_n)+'x'+num2str(sol.nb_cell_s)+'x'+num2str(sol.nb_cell_p)+'p'+num2str(sol.part_nb_cell)+'_save_';
 

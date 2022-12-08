@@ -85,7 +85,11 @@ function DFN_solver()
         
         disp("      jacdiag="+num2str(deb.chrono_Jacdiag_singleite)+"s jacce="+num2str(deb.chrono_Jacce_singleite) ...
             +"s jacpe="+num2str(deb.chrono_Jacpe_singleite) +"s jacps="+num2str(deb.chrono_Jacps_singleite) ...
-            +"s jaccsn="+num2str(deb.chrono_Jaccsn_singleite) +"s jaccsp="+num2str(deb.chrono_Jaccsp_singleite)  +"s jaccedce="+num2str(deb.chrono_Jaccedce_singleite)  )
+            +"s jaccsn="+num2str(deb.chrono_Jaccsn_singleite) +"s jaccsp="+num2str(deb.chrono_Jaccsp_singleite)  +"s")
+
+        disp("      jaccedce="+num2str(deb.chrono_Jaccedce_singleite)+" jacpedpe="+num2str(deb.chrono_Jacpedpe_singleite) ...
+            +"s jacpsdps="+num2str(deb.chrono_Jacpsdps_singleite)+"s jaccsdcs="+num2str(deb.chrono_Jaccsdcs_singleite) ...
+            +"s total="+num2str(deb.chrono_Jaccedce_singleite+deb.chrono_Jacpedpe_singleite+deb.chrono_Jacpsdps_singleite+deb.chrono_Jaccsdcs_singleite) )
 
         deb.chrono_newtsol_setup = deb.chrono_newtsol_setup + deb.chrono_newtsol_setup_singleite;
         deb.chrono_matrix_inversion = deb.chrono_matrix_inversion + deb.chrono_matrix_inversion_singleite;
@@ -106,7 +110,11 @@ function DFN_solver()
         deb.chrono_Jacps_singleite=0;
         deb.chrono_Jaccsn_singleite=0;
         deb.chrono_Jaccsp_singleite=0;
+
         deb.chrono_Jaccedce_singleite=0;
+        deb.chrono_Jacpedpe_singleite=0;
+        deb.chrono_Jacpsdps_singleite=0;
+        deb.chrono_Jaccsdcs_singleite=0;
 
         %if fv.V<sol.min_allowed_voltage
         if abs(dV_dt)>sol.max_allowed_voltage_time_differential && fv.SOC_neg<0.2

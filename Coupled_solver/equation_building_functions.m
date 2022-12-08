@@ -1,6 +1,17 @@
 classdef equation_building_functions
     methods
 
+        function ind = pe2ps_index(obj,i)
+            global p
+            global sol
+            
+            if i>sol.nb_cell_n
+                ind=i-sol.nb_cell_s;
+            else
+                ind=i;
+            end
+        end
+
         function fc = LHS_f_cs (obj,c,D,r,source)
             len=length(c);
             lenr=length(r);
@@ -53,8 +64,6 @@ classdef equation_building_functions
                 end
                 i_xcell=ceil(i/lenr);
                 sour=source(i_xcell);
-                sour_save=sour;
-
 
                 fcs   =  obj.LHS_f_cs_single_cell (resize_cs,D,r,sour,i,i_rcell,0);
                 for ii = max(1,i-1):1:min(len,i+1)
@@ -81,21 +90,17 @@ classdef equation_building_functions
                             i_xfullercell=i_xcell+sol.nb_cell_n+sol.nb_cell_s;
                             mock_cse(i_xfullcell)=min(cpdc(i),p.csp_max);
                         end
-                        mock_j=BV_fun.butler_volmer_equation(pe,ps,ce,mock_cse,T,Ueq,"LHS_Jac_f_Fdiff_cs");
-                        %disp("DEBUG BEN LHS_Jac_f_Fdiff_cs 1 "+num2str(sour)+"  "+num2str(cpdc(i))+"  "+num2str(i)+"  "+num2str(p.csn_max)+"  "+num2str(p.csp_max))
+
+                        mock_j=fv.j;
+                        mock_j(i_xfullercell)=BV_fun.butler_volmer_singlecell_standalone(i_xfullercell,pe,ps,ce,mock_cse,Ueq);
+
+                        %mock_j=BV_fun.butler_volmer_equation(pe,ps,ce,mock_cse,T,Ueq,"LHS_Jac_f_Fdiff_cs");
+                        
                         sour=obj.update_source_single_cell(i_xfullercell,mock_j,"cs");     
-                        %disp("DEBUG BEN LHS_Jac_f_Fdiff_cs 2 "+num2str(sour))
                     end
 
                     fcs_diff   =  obj.LHS_f_cs_single_cell (cpdc,D,r,sour,i,i_rcell,0);
                     Jac_fcs(i,ii)= (fcs_diff-fcs)/(divider);
-
-                    if i==ii && i_rcell==lenr 
-
-                        fcs_diff2   =  obj.LHS_f_cs_single_cell (cpdc,D,r,sour_save,i,i_rcell,0);
-                        Jac_fcs2= (fcs_diff2-fcs)/(divider);
-                        %disp("DEBUG BEN LHS_Jac_f_Fdiff_cs 3 "+num2str(fcs_diff)+"  "+num2str(fcs_diff2)+"  "+num2str(Jac_fcs(i,ii))+"  "+num2str(Jac_fcs2))
-                    end
                     
                 end
             end
@@ -149,8 +154,10 @@ classdef equation_building_functions
                 end
 
                 if  i_rcell==lenr 
-                    
-                    mock_j=BV_fun.butler_volmer_equation(pe,ps,cpdc,cse,T,Ueq,"LHS_Jac_f_Fdiff_csdce"); 
+                    mock_j=fv.j;
+                    mock_j(i_xfullcell)=BV_fun.butler_volmer_singlecell_standalone(i_xfullcell,pe,ps,cpdc,cse,Ueq);
+
+                    %mock_j=BV_fun.butler_volmer_equation(pe,ps,cpdc,cse,T,Ueq,"LHS_Jac_f_Fdiff_csdce"); 
                     sour=obj.update_source_single_cell(i_xfullcell,mock_j,"cs"); 
                 end
 
@@ -213,8 +220,10 @@ classdef equation_building_functions
                 end
 
                 if  i_rcell==lenr 
-                    
-                    mock_j=BV_fun.butler_volmer_equation(cpdc,ps,ce,cse,T,Ueq,"LHS_Jac_f_Fdiff_csdce"); 
+                    mock_j=fv.j;
+                    mock_j(i_xfullcell)=BV_fun.butler_volmer_singlecell_standalone(i_xfullcell,cpdc,ps,ce,cse,Ueq);
+
+                    %mock_j=BV_fun.butler_volmer_equation(cpdc,ps,ce,cse,T,Ueq,"LHS_Jac_f_Fdiff_csdce"); 
                     sour=obj.update_source_single_cell(i_xfullcell,mock_j,"cs"); 
                 end
 
@@ -278,8 +287,11 @@ classdef equation_building_functions
                 end
 
                 if  i_rcell==lenr 
+                    mock_j=fv.j;
+                    mock_j(i_xfullercell)=BV_fun.butler_volmer_singlecell_standalone(i_xfullercell,pe,cpdc,ce,cse,Ueq);
+
+                    %mock_j=BV_fun.butler_volmer_equation(pe,cpdc,ce,cse,T,Ueq,"LHS_Jac_f_Fdiff_csdce"); 
                     
-                    mock_j=BV_fun.butler_volmer_equation(pe,cpdc,ce,cse,T,Ueq,"LHS_Jac_f_Fdiff_csdce"); 
                     sour=obj.update_source_single_cell(i_xfullercell,mock_j,"cs"); 
                 end
 
@@ -337,7 +349,14 @@ classdef equation_building_functions
                         else
                             csmax=p.csp_max;
                         end
-                        mock_j=BV_fun.butler_volmer_equation(pe,ps,cpdc,cse,T,Ueq,"LHS_Jac_f_Fdiff_ce");
+                        %DEBUG BEN new calculation of mock_j
+
+                        mock_j=fv.j;
+                        mock_j(i)=BV_fun.butler_volmer_singlecell_standalone(i,pe,ps,cpdc,cse,Ueq);
+
+                        %mock_j=BV_fun.butler_volmer_equation(pe,ps,cpdc,cse,T,Ueq,"LHS_Jac_f_Fdiff_ce");
+                        %DEBUG BEN new calculation of mock_j
+
                         mock_source = source;
                         mock_source(i)=obj.update_source_single_cell(i,mock_j,"ce");
                     
@@ -352,11 +371,8 @@ classdef equation_building_functions
                     if i == j & Jac_fce(i,j)==0
                         Jac_fce(i,j)=0.000000001;
                     end
-
                 end
-                
             end
-                
         end
 
 
@@ -390,7 +406,12 @@ classdef equation_building_functions
                         else
                             csmax=p.csp_max;
                         end
-                        mock_j=BV_fun.butler_volmer_equation(cpdc,ps,ce,cse,T,Ueq,"LHS_Jac_f_Fdiff_ce");
+
+                        mock_j=fv.j;
+                        mock_j(i)=BV_fun.butler_volmer_singlecell_standalone(i,cpdc,ps,ce,cse,Ueq);
+
+                        %mock_j=BV_fun.butler_volmer_equation(cpdc,ps,ce,cse,T,Ueq,"LHS_Jac_f_Fdiff_ce");
+                        
                         mock_source = source;
                         mock_source(i)=obj.update_source_single_cell(i,mock_j,"ce");
                     
@@ -401,11 +422,8 @@ classdef equation_building_functions
 
                     fce_diff   =  obj.LHS_f_ce_single_cell (ce,D,dx,source_used,i);
                     Jac_dfce_dpe(i,j)= (fce_diff-fce)/(divider);
-
                 end
-                
             end
-                
         end
 
 
@@ -448,7 +466,9 @@ classdef equation_building_functions
                     else
                         csmax=p.csp_max;
                     end
-                    mock_j=BV_fun.butler_volmer_equation(pe,cpdc,ce,cse,T,Ueq,"LHS_Jac_f_Fdiff_cedps");
+                    mock_j=fv.j;
+                    mock_j(i)=BV_fun.butler_volmer_singlecell_standalone(i,pe,cpdc,ce,cse,Ueq);
+                    %mock_j=BV_fun.butler_volmer_equation(pe,cpdc,ce,cse,T,Ueq,"LHS_Jac_f_Fdiff_cedps");
                     mock_source = source;
                     mock_source(i)=obj.update_source_single_cell(i,mock_j,"ce");
                     
@@ -457,9 +477,7 @@ classdef equation_building_functions
                     fce_diff   =  obj.LHS_f_ce_single_cell (ce,D,dx,source_used,i);
                     Jac_dfce_dps(i,j_eff)= (fce_diff-fce)/(divider);
                 end
-                
             end
-                
         end
 
 
@@ -499,8 +517,11 @@ classdef equation_building_functions
                         divider=0.000001;
                     end
 
+                    mock_j=fv.j;
+                    mock_j(i)=BV_fun.butler_volmer_singlecell_standalone(i,pe,ps,ce,cpdc,Ueq);
                     
-                    mock_j=BV_fun.butler_volmer_equation(pe,ps,ce,cpdc,T,Ueq,"LHS_Jac_f_Fdiff_cedcs");
+                    %mock_j=BV_fun.butler_volmer_equation(pe,ps,ce,cpdc,T,Ueq,"LHS_Jac_f_Fdiff_cedcs");
+                    
                     mock_source = source;
                     mock_source(i)=obj.update_source_single_cell(i,mock_j,"ce");
                     
@@ -509,9 +530,7 @@ classdef equation_building_functions
                     fce_diff   =  obj.LHS_f_ce_single_cell (ce,D,dx,source_used,i);
                     Jac_dfce_dcs(i,j_eff*(sol.part_nb_cell+1))= (fce_diff-fce)/(divider);
                 end
-                
             end
-                
         end
 
 
@@ -570,7 +589,11 @@ classdef equation_building_functions
                         else
                             csmax=p.csp_max;
                         end
-                        mock_j=BV_fun.butler_volmer_equation(ppdp,ps,ce,cse,T,Ueq,"LHS_Jac_f_Fdiff_pe");
+                        
+                        mock_j=fv.j;
+                        mock_j(i)=BV_fun.butler_volmer_singlecell_standalone(i,ppdp,ps,ce,cse,Ueq);
+
+                        %mock_j=BV_fun.butler_volmer_equation(ppdp,ps,ce,cse,T,Ueq,"LHS_Jac_f_Fdiff_pe");
                         mock_source = source;
                         mock_source(i)=obj.update_source_single_cell(i,mock_j,"pe");
                     
@@ -621,7 +644,11 @@ classdef equation_building_functions
                         else
                             csmax=p.csp_max;
                         end
-                        mock_j=BV_fun.butler_volmer_equation(pe,ps,ppdp,cse,T,Ueq,"LHS_Jac_fpe_Fdiff_ce");
+
+                        mock_j=fv.j;
+                        mock_j(i)=BV_fun.butler_volmer_singlecell_standalone(i,pe,ps,ppdp,cse,Ueq);
+
+                        %mock_j=BV_fun.butler_volmer_equation(pe,ps,ppdp,cse,T,Ueq,"LHS_Jac_fpe_Fdiff_ce");
                         mock_source = source;
                         mock_source(i)=obj.update_source_single_cell(i,mock_j,"pe");
                     
@@ -677,7 +704,11 @@ classdef equation_building_functions
                     else
                         csmax=p.csp_max;
                     end
-                    mock_j=BV_fun.butler_volmer_equation(pe,ppdp,ce,cse,T,Ueq,"LHS_Jac_fpe_Fdiff_pedps");
+
+                    mock_j=fv.j;
+                    mock_j(i)=BV_fun.butler_volmer_singlecell_standalone(i,pe,ppdp,ce,cse,Ueq);
+
+                    %mock_j=BV_fun.butler_volmer_equation(pe,ppdp,ce,cse,T,Ueq,"LHS_Jac_fpe_Fdiff_pedps");
                     mock_source = source;
                     mock_source(i)=obj.update_source_single_cell(i,mock_j,"pe");
                 
@@ -726,8 +757,10 @@ classdef equation_building_functions
                         divider=0.000001;
                     end
 
+                    mock_j=fv.j;
+                    mock_j(i)=BV_fun.butler_volmer_singlecell_standalone(i,pe,ps,ce,ppdp,Ueq);
 
-                    mock_j=BV_fun.butler_volmer_equation(pe,ps,ce,ppdp,T,Ueq,"LHS_Jac_fpe_Fdiff_pedcs");
+                    %mock_j=BV_fun.butler_volmer_equation(pe,ps,ce,ppdp,T,Ueq,"LHS_Jac_fpe_Fdiff_pedcs");
                     mock_source = source;
                     mock_source(i)=obj.update_source_single_cell(i,mock_j,"pe");
                 
@@ -801,7 +834,11 @@ classdef equation_building_functions
                             csmax=p.csp_max;
                             indexjacps=i+sol.nb_cell_s;
                         end
-                        mock_j=BV_fun.butler_volmer_equation(pe,ppdp,ce,cse,T,Ueq,"LHS_Jac_f_Fdiff_ps");
+
+                        mock_j=fv.j;
+                        mock_j(indexjacps)=BV_fun.butler_volmer_singlecell_standalone(indexjacps,pe,ppdp,ce,cse,Ueq);
+
+                        %mock_j=BV_fun.butler_volmer_equation(pe,ppdp,ce,cse,T,Ueq,"LHS_Jac_f_Fdiff_ps");
                         mock_source = source;
                         mock_source(i)=obj.update_source_single_cell(indexjacps,mock_j,"ps");
                     
@@ -854,7 +891,11 @@ classdef equation_building_functions
                     end
 
                     if i==j 
-                        mock_j=BV_fun.butler_volmer_equation(ppdp,ps,ce,cse,T,Ueq,"LHS_Jac_f_Fdiff_psdpe");
+
+                        mock_j=fv.j;
+                        mock_j(indexjacps)=BV_fun.butler_volmer_singlecell_standalone(indexjacps,ppdp,ps,ce,cse,Ueq);
+
+                        %mock_j=BV_fun.butler_volmer_equation(ppdp,ps,ce,cse,T,Ueq,"LHS_Jac_f_Fdiff_psdpe");
                         mock_source = source;
                         mock_source(i)=obj.update_source_single_cell(indexjacps,mock_j,"ps");
                     
@@ -907,7 +948,10 @@ classdef equation_building_functions
                     end
 
                     if i==j 
-                        mock_j=BV_fun.butler_volmer_equation(pe,ps,ppdp,cse,T,Ueq,"LHS_Jac_f_Fdiff_psdce");
+                        mock_j=fv.j;
+                        mock_j(indexjacps)=BV_fun.butler_volmer_singlecell_standalone(indexjacps,pe,ps,ppdp,cse,Ueq);
+
+                        %mock_j=BV_fun.butler_volmer_equation(pe,ps,ppdp,cse,T,Ueq,"LHS_Jac_f_Fdiff_psdce");
                         mock_source = source;
                         mock_source(i)=obj.update_source_single_cell(indexjacps,mock_j,"ps");
                     
@@ -964,8 +1008,10 @@ classdef equation_building_functions
                         divider=0.000001;
                     end
 
+                    mock_j=fv.j;
+                    mock_j(i)=BV_fun.butler_volmer_singlecell_standalone(i,pe,ps,ce,ppdp,Ueq);
 
-                    mock_j=BV_fun.butler_volmer_equation(pe,ps,ce,ppdp,T,Ueq,"LHS_Jac_fps_Fdiff_psdcs");
+                    %mock_j=BV_fun.butler_volmer_equation(pe,ps,ce,ppdp,T,Ueq,"LHS_Jac_fps_Fdiff_psdcs");
                     mock_source = source;
                     mock_source(j_eff)=obj.update_source_single_cell(i,mock_j,"ps");
                 
