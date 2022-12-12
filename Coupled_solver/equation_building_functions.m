@@ -40,11 +40,12 @@ classdef equation_building_functions
             end     
         end
 
-        function Jac_fcs = LHS_Jac_f_Fdiff_cs(obj,pe,ps,ce,cse,T,Ueq,resize_cs,D,r,source,electrode)
+        function Jac_fcs = LHS_Jac_f_Fdiff_cs(obj,pe,ps,ce,cse,T,Ueq,resize_cs,D,r,source,electrode,change_Ueq)
             global fv
             global sol
             global p
             global BV_fun
+            global param_functions
             mock_j = fv.j;
 
             dc_prop=1.0001;
@@ -80,19 +81,26 @@ classdef equation_building_functions
                         divider=0.000001;
                     end
 
-                    if i==ii && i_rcell==lenr 
+                    if i==ii && i_rcell==lenr
+                        mock_Ueq=Ueq;
                         if electrode=="csn"
                             i_xfullcell=i_xcell;
                             i_xfullercell=i_xcell;
                             mock_cse(i_xfullcell)=min(cpdc(i),p.csn_max);
+                            if change_Ueq==1
+                                mock_Ueq(i_xfullercell)=param_functions.neg_electrode_Ueq(mock_cse(i_xfullcell),i_xfullcell);
+                            end
                         else
                             i_xfullcell=i_xcell+sol.nb_cell_n;
                             i_xfullercell=i_xcell+sol.nb_cell_n+sol.nb_cell_s;
                             mock_cse(i_xfullcell)=min(cpdc(i),p.csp_max);
+                            if change_Ueq==1
+                                mock_Ueq(i_xfullercell)=param_functions.pos_electrode_Ueq(mock_cse(i_xfullcell),i_xfullcell);
+                            end
                         end
 
                         mock_j=fv.j;
-                        mock_j(i_xfullercell)=BV_fun.butler_volmer_singlecell_standalone(i_xfullercell,pe,ps,ce,mock_cse,Ueq);
+                        mock_j(i_xfullercell)=BV_fun.butler_volmer_singlecell_standalone(i_xfullercell,pe,ps,ce,mock_cse,mock_Ueq);
 
                         %mock_j=BV_fun.butler_volmer_equation(pe,ps,ce,mock_cse,T,Ueq,"LHS_Jac_f_Fdiff_cs");
                         
@@ -272,11 +280,8 @@ classdef equation_building_functions
                 sour=source(i_xcell);
                 sour_save=sour;
 
-
                 fcs   =  obj.LHS_f_cs_single_cell (resize_cs,D,r,sour,i,i_rcell,0);
                 
-                
-
                 cpdc=ps;
                 if not(cpdc(i_xfullcell)==0)
                     divider=(cpdc(i_xfullcell)*(dc_prop-1));
@@ -315,11 +320,11 @@ classdef equation_building_functions
             global BC_fun
             [dxm,dxc,dxp,dummym,dummyc,dummyp,cm,cc,cp,Dm,Dc,Dp]=BC_fun.concentration_electrolyte_BC(c,c,dx,i,D);
                     
-            f =  2*(Dp*dxp+Dc*dxc)*(cp-cc)/((dxc+dxp)^2) +  ...
-                 2*(Dm*dxm+Dc*dxc)*(cm-cc)/((dxc+dxm)^2)+ dxc*source(i);        
+            f = 2*(Dp*dxp+Dc*dxc)*(cp-cc)/((dxc+dxp)^2) +  ...
+                2*(Dm*dxm+Dc*dxc)*(cm-cc)/((dxc+dxm)^2)+ dxc*source(i);        
         end
 
-        function Jac_fce = LHS_Jac_f_Fdiff_ce(obj,pe,ps,ce,cse,T,Ueq,D,dx,source)
+        function Jac_fce = LHS_Jac_f_Fdiff_ce(obj,pe,ps,ce,cse,T,Ueq,D,dx,source,change_D)
             dc_prop=1.0001;
             len=length(ce);
             Jac_fce=zeros(len);
@@ -341,6 +346,11 @@ classdef equation_building_functions
                     else
                         cpdc(j)=0.000001;
                         divider=0.000001;
+                    end
+
+                    mock_D=D;
+                    if change_D==1
+                        mock_D(j)=obj.update_elec_diff_singlecell(j,cpdc);
                     end
 
                     if i==j 
@@ -365,7 +375,7 @@ classdef equation_building_functions
                         source_used=source;
                     end
 
-                    fce_diff   =  obj.LHS_f_ce_single_cell (cpdc,D,dx,source_used,i);
+                    fce_diff   =  obj.LHS_f_ce_single_cell (cpdc,mock_D,dx,source_used,i);
                     Jac_fce(i,j)= (fce_diff-fce)/(divider);
 
                     if i == j & Jac_fce(i,j)==0
@@ -481,11 +491,13 @@ classdef equation_building_functions
         end
 
 
-        function Jac_dfce_dcs = LHS_Jac_f_Fdiff_cedcs(obj,pe,ps,ce,cse,T,Ueq,D,dx,source)            
+        function Jac_dfce_dcs = LHS_Jac_f_Fdiff_cedcs(obj,pe,ps,ce,cse,T,Ueq,D,dx,source,changeUeq)            
             global fv
             global sol
             global p
             global BV_fun
+            global param_functions
+
             mock_source = source;
             mock_j = fv.j;
 
@@ -517,8 +529,17 @@ classdef equation_building_functions
                         divider=0.000001;
                     end
 
+                    mock_Ueq=Ueq;
+                    if changeUeq==1
+                        if j>sol.nb_cell_n
+                            mock_Ueq(i)=param_functions.pos_electrode_Ueq(cpdc(j_eff),j_eff);
+                        else
+                            mock_Ueq(i)=param_functions.neg_electrode_Ueq(cpdc(j_eff),j_eff);
+                        end
+                    end
+
                     mock_j=fv.j;
-                    mock_j(i)=BV_fun.butler_volmer_singlecell_standalone(i,pe,ps,ce,cpdc,Ueq);
+                    mock_j(i)=BV_fun.butler_volmer_singlecell_standalone(i,pe,ps,ce,cpdc,mock_Ueq);
                     
                     %mock_j=BV_fun.butler_volmer_equation(pe,ps,ce,cpdc,T,Ueq,"LHS_Jac_f_Fdiff_cedcs");
                     
@@ -613,7 +634,7 @@ classdef equation_building_functions
         end
 
 
-        function Jac_fpe = LHS_Jac_f_Fdiff_pedce(obj,pe,ps,ce,cse,T,Ueq,kappa,kappa_D,dx,source)
+        function Jac_fpe = LHS_Jac_f_Fdiff_pedce(obj,pe,ps,ce,cse,T,Ueq,kappa,kappa_D,dx,source,change_kappa)
             dp_prop=1.0001;
             len=length(pe);
             Jac_fpe=zeros(len);
@@ -638,6 +659,12 @@ classdef equation_building_functions
                         divider=0.000001;
                     end
 
+                    mock_kappa=kappa;
+                    mock_kappa_D=kappa_D;
+                    if change_kappa==1
+                        [mock_kappa(j),mock_kappa_D(j)]=obj.update_kappa_singlecell(j,ppdp);
+                    end
+
                     if i==j 
                         if i<=sol.nb_cell_n
                             csmax=p.csn_max;
@@ -657,7 +684,7 @@ classdef equation_building_functions
                         source_used=source;
                     end
 
-                    fpe_diff   =  obj.LHS_f_pe_single_cell (pe,ppdp,kappa,kappa_D,dx,source_used,i);
+                    fpe_diff   =  obj.LHS_f_pe_single_cell (pe,ppdp,mock_kappa,mock_kappa_D,dx,source_used,i);
                     Jac_fpe(i,j)= (fpe_diff-fpe)/(divider);
                 end
             end
@@ -1036,24 +1063,22 @@ classdef equation_building_functions
             fv.Ueq=0*fv.Ueq;
 
             if p.De_function_mode==1
-                count_loc=0;
                 for cccc = 1:1:length(ce)
-                    count_loc=count_loc+1;
-                    De(count_loc) = param_functions.electrolyte_diffusivity(ce(cccc))*p.De_eff_coeff(count_loc);
+                    De(cccc) = obj.update_elec_diff_singlecell (cccc,ce);
+                    %De(cccc) = param_functions.electrolyte_diffusivity(ce(cccc))*p.De_eff_coeff(cccc);
                 end
             end
 
             if p.kappa_function_mode==1
-                count_loc=0;
                 for cccc = 1:1:length(ce)
-                    count_loc=count_loc+1;
-                    kappa_eff(count_loc) = param_functions.electrolyte_conductivity(ce(cccc))*p.De_eff_coeff(count_loc);
-                    kappa_D_eff(count_loc) = kappa_eff(count_loc)*2* p.Rg * ini.T0/p.Faraday * (p.t_plus-1);
+                    [kappa_eff(cccc), kappa_D_eff(cccc)]=obj.update_kappa_singlecell(cccc,ce);
+
+                    %kappa_eff(cccc) = param_functions.electrolyte_conductivity(ce(cccc))*p.De_eff_coeff(cccc);
+                    %kappa_D_eff(cccc) = kappa_eff(cccc)*2* p.Rg * ini.T0/p.Faraday * (p.t_plus-1);
                 end 
             end
 
             if p.kappa_function_mode==1
-                count_loc=0;
                 for cccc = 1:1:sol.nb_cell_n
                     fv.Ueq(cccc) = param_functions.neg_electrode_Ueq(cse(cccc),cccc);
                 end
@@ -1061,8 +1086,23 @@ classdef equation_building_functions
                     fv.Ueq(cccc+sol.nb_cell_s) = param_functions.pos_electrode_Ueq(cse(cccc),cccc);
                 end
             end
+        end
 
+        function De = update_elec_diff_singlecell (obj,cccc,ce) 
+            global p
+            global ini
+            global param_functions
 
+            De = param_functions.electrolyte_diffusivity(ce(cccc))*p.De_eff_coeff(cccc);
+        end
+
+        function [kappa_eff, kappa_D_eff] = update_kappa_singlecell (obj,cccc,ce) 
+            global p
+            global ini
+            global param_functions
+
+            kappa_eff =  param_functions.electrolyte_conductivity(ce(cccc))*p.De_eff_coeff(cccc);
+            kappa_D_eff =  kappa_eff*2* p.Rg * ini.T0/p.Faraday * (p.t_plus-1);
         end
 
         function source = update_source_single_cell (obj,i,j,ID) 

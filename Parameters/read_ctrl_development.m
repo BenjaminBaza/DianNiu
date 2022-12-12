@@ -110,6 +110,8 @@ function read_ctrl_development()
     deb.safe_BC_mode=0;
     deb.break_time_loop=0;
     deb.write_output_data=2; %1 to write final data, 2 to write all history data
+
+    deb.timing_jacobian=0;
     deb.chrono_matrix_inversion=0;
     deb.chrono_newtsol_setup=0;
     deb.chrono_newtsol_update=0;
