@@ -159,13 +159,13 @@ classdef newton_solver_functions
                     Calc_Jacpe_timer=tic;
                     Jac_f_pe_dce_next = eq_build_fun.LHS_Jac_f_Fdiff_pedce(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,kappa,p.kappa_D_eff,dx,source_pe,1);
                     Jac_f_pe_dps_next = eq_build_fun.LHS_Jac_f_Fdiff_pedps(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,kappa,p.kappa_D_eff,dx,source_pe);
-                    Jac_f_pe_dcs_next = eq_build_fun.LHS_Jac_f_Fdiff_pedcs(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,kappa,p.kappa_D_eff,dx,source_pe);
+                    Jac_f_pe_dcs_next = eq_build_fun.LHS_Jac_f_Fdiff_pedcs(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,kappa,p.kappa_D_eff,dx,source_pe,1);
                     deb.chrono_Jacpe_singleite = deb.chrono_Jacpe_singleite + toc(Calc_Jacpe_timer);
 
                     Calc_Jacps_timer=tic;
                     Jac_f_ps_dce_next = eq_build_fun.LHS_Jac_f_Fdiff_psdce(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,sigma,dx,source_ps,separator_index,current_source_psBC);
                     Jac_f_ps_dpe_next = eq_build_fun.LHS_Jac_f_Fdiff_psdpe(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,sigma,dx,source_ps,separator_index,current_source_psBC);
-                    Jac_f_ps_dcs_next = eq_build_fun.LHS_Jac_f_Fdiff_psdcs(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,sigma,dx,source_ps,separator_index,current_source_psBC);
+                    Jac_f_ps_dcs_next = eq_build_fun.LHS_Jac_f_Fdiff_psdcs(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,sigma,dx,source_ps,separator_index,current_source_psBC,1);
                     deb.chrono_Jacps_singleite = deb.chrono_Jacps_singleite + toc(Calc_Jacps_timer);
 
                     Calc_Jaccsn_timer=tic;
@@ -288,16 +288,16 @@ classdef newton_solver_functions
 
                 Jac_coupled(begin_ce:end_ce,begin_pe:end_pe)=Jac_gce_dpe;
                 Jac_coupled(begin_ce:end_ce,begin_ps:end_ps)=Jac_gce_dps;
-                %Jac_coupled(begin_ce:end_ce,begin_cs:end_cs)=Jac_gce_dcs;
+                Jac_coupled(begin_ce:end_ce,begin_cs:end_cs)=Jac_gce_dcs;
 
                 Jac_coupled(begin_pe:end_pe,begin_ce:end_ce)=Jac_gpe_dce;
                 Jac_coupled(begin_pe:end_pe,begin_ps:end_ps)=Jac_gpe_dps;
-                %Jac_coupled(begin_pe:end_pe,begin_cs:end_cs)=Jac_gpe_dcs;
+                Jac_coupled(begin_pe:end_pe,begin_cs:end_cs)=Jac_gpe_dcs;
 
 
                 Jac_coupled(begin_ps:end_ps,begin_ce:end_ce)=Jac_gps_dce;
                 Jac_coupled(begin_ps:end_ps,begin_pe:end_pe)=Jac_gps_dpe;
-                %Jac_coupled(begin_ps:end_ps,begin_cs:end_cs)=Jac_gps_dcs;
+                Jac_coupled(begin_ps:end_ps,begin_cs:end_cs)=Jac_gps_dcs;
 
                 Jac_coupled(begin_csn:end_csn,begin_ce:end_ce)=Jac_gcsn_dce;
                 Jac_coupled(begin_csn:end_csn,begin_pe:end_pe)=Jac_gcsn_dpe;
@@ -614,7 +614,7 @@ classdef newton_solver_functions
                 if (norm_delta_coupled<newt_lim) && newt_ite>1
                     
                     if deb.prints>=0
-                        disp("Newton method for the coupled system converged:"+num2str(newt_ite)+" , "+num2str(norm_delta_coupled) ...
+                        disp("      Newton method for the coupled system converged:"+num2str(newt_ite)+" , "+num2str(norm_delta_coupled) ...
                                                                             +" , "+num2str(norm_delta_ps)+" , "+num2str(norm_delta_pe) ...
                                                                             +" , "+num2str(norm_delta_ce)+" , "+num2str(norm_delta_csn)+" , "+num2str(norm_delta_csp) ...
                                                                             +" , and "+num2str(-(log10(max(hist.residuals(1,:)))-log10(min(hist.residuals(1,1:newt_ite))))) ...
@@ -623,10 +623,10 @@ classdef newton_solver_functions
                     break
                 elseif newt_ite==newt_max_ite
                     if deb.prints>=1
-                        disp("Newton method for the coupled system did not converge:"+num2str(newt_ite)+" , "+num2str(norm_delta_coupled) ...
+                        disp("      Newton method for the coupled system did not converge:"+num2str(newt_ite)+" , "+num2str(norm_delta_coupled) ...
                                                                             +" , "+num2str(norm_delta_ps)+" , "+num2str(norm_delta_pe) ...
                                                                             +" , "+num2str(norm_delta_ce)+" , "+num2str(norm_delta_csn)+" , "+num2str(norm_delta_csp))
-                        disp("Limit of the solver: "+num2str(log10(newt_lim))+" current order of magnitude of residual: "+ num2str(log10(norm_delta_coupled))+" det(Jac_coupled)="+num2str(det(Jac_coupled)) )
+                        disp("      Limit of the solver: "+num2str(log10(newt_lim))+" current order of magnitude of residual: "+ num2str(log10(norm_delta_coupled))+" det(Jac_coupled)="+num2str(det(Jac_coupled)) )
                     end
                     newt_ite=newt_ite+1;
                     break

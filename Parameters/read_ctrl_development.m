@@ -54,7 +54,8 @@ function read_ctrl_development()
     sol.time_tot    = 4200.0; %10800;                     %Total time of the simulation [s]
     sol.time        = 0.0; %10800;                     %Total time of the simulation [s]
     sol.dt          = 0.    ;%1.                        %Time step for the time discretization [s]
-    sol.max_dt      = 10.    ;%1.                        %Time step for the time discretization [s]
+    sol.max_dt      = 10.    ;%1.                        %Maximum time step for the time discretization [s]
+    sol.quick_dt    = 0.5    ;%1.                        %Faster time step for the time discretization [s] for the modeling of the end of a charge / discharge
     sol.nb_steps    = 10000 ; %length(sol.time_array);    % Number of time states visited throughout the simulation
     sol.time_array  = zeros(1,sol.nb_steps) ; %sol.dt:sol.dt:sol.time_tot;  % array containing the time coordinate of each time step (may be redundant)
 
@@ -314,8 +315,8 @@ function read_ctrl_development()
 
     fv.j=BV_fun.butler_volmer_equation(fv.pe,fv.ps,fv.ce,fv.cse, ini.T0,fv.Ueq,"read_ctrl");
     fv.V=0;
-    fv.SOC_neg=0;
-    fv.SOC_pos=0;
+    fv.SOC_neg=ini.SOC;
+    fv.SOC_pos=ini.SOC;
 
     if p.De_function_mode==1
     	p.De_eff = param_functions.electrolyte_diffusivity(ini.ce0) *ones(sol.nb_cell,1);

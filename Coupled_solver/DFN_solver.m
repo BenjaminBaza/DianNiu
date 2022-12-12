@@ -28,12 +28,18 @@ function DFN_solver()
     while sol.time<sol.time_tot
         sol.time_ite=sol.time_ite+1;
 
-        %sol.dt=sol.max_dt;
+        max_dt=sol.max_dt;
+        if (ex.I_array(sol.time_ite)>0 && min(fv.SOC_neg,fv.SOC_pos)<0.005) || (ex.I_array(sol.time_ite)<0 && max(fv.SOC_neg,fv.SOC_pos)>0.995)
+            max_dt=sol.quick_dt;
+        end
+
         if sol.time_ite<10
-            sol.dt=sol.max_dt;
+            sol.dt=max_dt;        
         else
-            if not(sol.dt==sol.max_dt) && mod(sol.time_ite,20)==0
-                sol.dt=min(sol.dt*8,sol.max_dt);
+            if sol.dt>max_dt
+                sol.dt=max_dt;
+            elseif not(sol.dt==max_dt) && mod(sol.time_ite,20)==0
+                sol.dt=min(sol.dt*8,max_dt);
             end
         end
 
@@ -76,8 +82,8 @@ function DFN_solver()
                 " dV/dt="+num2str(dV_dt)+"\n")
 
         disp("      avg(ce)="+num2str(mean(fv.ce))+" avg(csn)="+num2str(mean(mean(fv.csn)))+" avg(csp)="+num2str(mean(mean(fv.csp)))+" memory="+num2str(user.MemUsedMATLAB) ...
-            +" PreNewt="+num2str(deb.chrono_newtsol_setup_singleite)+"s MatInv t="+num2str(deb.chrono_matrix_inversion_singleite) ...
-            +"s PostNewt t="+num2str(deb.chrono_newtsol_update_singleite) )
+            +" PreNewt="+num2str(deb.chrono_newtsol_setup_singleite)+"s MatInv="+num2str(deb.chrono_matrix_inversion_singleite) ...
+            +"s PostNewt="+num2str(deb.chrono_newtsol_update_singleite) )
 
         disp("      updt dtso="+num2str(deb.chrono_updt_dtso_singleite)+"s Calc Jac="+num2str(deb.chrono_Calc_Jac_singleite) ...
             +"s Calc f="+num2str(deb.chrono_Calc_f_singleite) +"s Calc gJacg="+num2str(deb.chrono_Calc_gJacg_singleite) ...
@@ -121,7 +127,8 @@ function DFN_solver()
         end
 
         %if fv.V<sol.min_allowed_voltage
-        if abs(dV_dt)>sol.max_allowed_voltage_time_differential && fv.SOC_neg<0.2
+        if (abs(dV_dt)>sol.max_allowed_voltage_time_differential && fv.SOC_neg<0.2) || ...
+                    ((min(fv.SOC_neg,fv.SOC_pos)<-0.00000001 || max(fv.SOC_neg,fv.SOC_pos)>1.00000001) && not(ex.I_array(sol.time_ite)==0))
             ex.I_array(sol.time_ite+1:length(sol.time_array)) = 0 ;
             hist.charge_time = sol.time;
             sol.dt=sol.max_dt;

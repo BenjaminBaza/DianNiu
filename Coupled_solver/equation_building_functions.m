@@ -748,11 +748,12 @@ classdef equation_building_functions
         end
 
 
-        function Jac_dfpe_dcs = LHS_Jac_f_Fdiff_pedcs(obj,pe,ps,ce,cse,T,Ueq,kappa,kappa_D,dx,source)      
+        function Jac_dfpe_dcs = LHS_Jac_f_Fdiff_pedcs(obj,pe,ps,ce,cse,T,Ueq,kappa,kappa_D,dx,source,changeUeq)      
             global fv
             global sol
             global p
             global BV_fun
+            global param_functions
             mock_source = source;
             mock_j = fv.j;
 
@@ -784,8 +785,17 @@ classdef equation_building_functions
                         divider=0.000001;
                     end
 
+                    mock_Ueq=Ueq;
+                    if changeUeq==1
+                        if j>sol.nb_cell_n
+                            mock_Ueq(i)=param_functions.pos_electrode_Ueq(ppdp(j_eff),j_eff);
+                        else
+                            mock_Ueq(i)=param_functions.neg_electrode_Ueq(ppdp(j_eff),j_eff);
+                        end
+                    end
+
                     mock_j=fv.j;
-                    mock_j(i)=BV_fun.butler_volmer_singlecell_standalone(i,pe,ps,ce,ppdp,Ueq);
+                    mock_j(i)=BV_fun.butler_volmer_singlecell_standalone(i,pe,ps,ce,ppdp,mock_Ueq);
 
                     %mock_j=BV_fun.butler_volmer_equation(pe,ps,ce,ppdp,T,Ueq,"LHS_Jac_fpe_Fdiff_pedcs");
                     mock_source = source;
@@ -998,11 +1008,12 @@ classdef equation_building_functions
         end
 
 
-        function Jac_dfps_dcs = LHS_Jac_f_Fdiff_psdcs(obj,pe,ps,ce,cse,T,Ueq,D,dx,source,separator_index,source_BC)      
+        function Jac_dfps_dcs = LHS_Jac_f_Fdiff_psdcs(obj,pe,ps,ce,cse,T,Ueq,D,dx,source,separator_index,source_BC,changeUeq)      
             global fv
             global sol
             global p
             global BV_fun
+            global param_functions
             mock_source = source;
             mock_j = fv.j;
 
@@ -1016,7 +1027,7 @@ classdef equation_building_functions
                     continue
                 end
                 
-                for j = max(1,i):1:min(len,i)
+                for j = max(1,i):1:min(len2,i)
                     csmax=p.csn_max;
                     j_eff=j;
                     if j>sol.nb_cell_n
@@ -1035,8 +1046,17 @@ classdef equation_building_functions
                         divider=0.000001;
                     end
 
+                    mock_Ueq=Ueq;
+                    if changeUeq==1
+                        if j>sol.nb_cell_n
+                            mock_Ueq(i)=param_functions.pos_electrode_Ueq(ppdp(j_eff),j_eff);
+                        else
+                            mock_Ueq(i)=param_functions.neg_electrode_Ueq(ppdp(j_eff),j_eff);
+                        end
+                    end
+
                     mock_j=fv.j;
-                    mock_j(i)=BV_fun.butler_volmer_singlecell_standalone(i,pe,ps,ce,ppdp,Ueq);
+                    mock_j(i)=BV_fun.butler_volmer_singlecell_standalone(i,pe,ps,ce,ppdp,mock_Ueq);
 
                     %mock_j=BV_fun.butler_volmer_equation(pe,ps,ce,ppdp,T,Ueq,"LHS_Jac_fps_Fdiff_psdcs");
                     mock_source = source;
