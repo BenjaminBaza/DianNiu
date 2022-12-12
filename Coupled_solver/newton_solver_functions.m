@@ -308,22 +308,6 @@ classdef newton_solver_functions
                 Jac_coupled(begin_csp:end_csp,begin_ps:end_ps)=Jac_gcsp_dps;
 
 
-                %% This part appears to be unnecessary
-                %if (det(Jac_gce)==0 || det(Jac_gps)==0 || det(Jac_gp)==0)
-                %    disp("The coupled jacobian has a determinant of 0. The diagonal boost method is used to make the matrix invertible.")
-                %    disp(num2str(det(Jac_coupled))+"  "+num2str(det(Jac_gcsn))+"  "+num2str(det(Jac_gcsp))+"  "+num2str(det(Jac_gce))+"  "+num2str(det(Jac_gp))+"  "+num2str(det(Jac_gps)))
-                %    figure(264);
-                %    spy(Jac_coupled)
-                %    grid on
-                %    grid minor
-                %    
-                %    for iiii=1:1:length(Jac_coupled)
-                %        Jac_coupled(iiii,iiii)=Jac_coupled(iiii,iiii)*1.0000000001;
-                %    end
-                %    disp(num2str(det(Jac_coupled)))
-                %end
-
-
                 g_coupled   = cat(1,gcsn,gcsp);
                 g_coupled   = cat(1,g_coupled,gc);
                 g_coupled   = cat(1,g_coupled,gp);
@@ -363,20 +347,6 @@ classdef newton_solver_functions
                 % Update solutions, record history data and measure resudual
 
                 newtsol_update_timer=tic;
-
-                %delta_coupled = linsolve(Jac_coupled,-g_coupled);
-                %delta_csn = linsolve(Jac_gcsn,-gcsn);
-                %delta_csp = linsolve(Jac_gcsp,-gcsp);
-                %delta_c = linsolve(Jac_gce,-gc);
-                %delta_p = linsolve(Jac_gp,-gp);
-                %delta_ps = linsolve(Jac_gps,-gps);
-                %delta_ps1 = linsolve(Jac_gps(1:3,1:3),-gps(1:3));
-                %delta_ps2 = linsolve(Jac_gps(4:6,4:6),0*gps(4:6));
-
-                %delta_coupled = cat(1,delta_csn,delta_csp);
-                %delta_coupled = cat(1,delta_coupled,delta_c);
-                %delta_coupled = cat(1,delta_coupled,delta_p);
-                %delta_coupled = cat(1,delta_coupled,delta_ps);
 
                 norm_delta_coupled = sqrt(sum(transpose(delta_coupled) * delta_coupled))/length(g_coupled);
                 norm_delta_ps = sqrt(sum(transpose(delta_coupled(sol.nb_cell_n*lenr+sol.nb_cell_p*lenr+len+len+1 : sol.nb_cell_n*lenr+sol.nb_cell_p*lenr+len+len+len_ps)) * delta_coupled(sol.nb_cell_n*lenr+sol.nb_cell_p*lenr+len+len+1 : sol.nb_cell_n*lenr+sol.nb_cell_p*lenr+len+len+len_ps)))/len_ps;
@@ -602,26 +572,10 @@ classdef newton_solver_functions
                  
 
 
-
-
+                % Bring variables back to normal levels
 
                 min_c=0.00000;
 
-                %for iiii=1:1:length(resized_csn_next)
-                %    if resized_csn_next(iiii)<min_c
-                %        resized_csn_next(iiii)=min_c;
-                %    elseif  resized_csn_next(iiii)>p.csn_max
-                %        resized_csn_next(iiii)=p.csn_max;
-                %    end
-                %end
-%
-                %for iiii=1:1:length(resized_csp_next)
-                %    if resized_csp_next(iiii)<min_c
-                %        resized_csp_next(iiii)=min_c;
-                %    elseif  resized_csp_next(iiii)>p.csp_max
-                %        resized_csp_next(iiii)=p.csp_max;
-                %    end
-                %end
 
                 for iiii=1:1:length(ce_next)
                     if ce_next(iiii)<=0
@@ -629,13 +583,8 @@ classdef newton_solver_functions
                     end
                 end
 
-                for iiii=1:1:length(ps_next)
-                    cap=100000;
-                    if abs(ps_next(iiii))>cap
-                        ps_next(iiii)=cap*ps_next(iiii)/abs(ps_next(iiii));
-                    end
-                end
-                
+                % Recompose cse (concentration at the surface of each particule.)
+
                 for iiii =[1:sol.nb_cell_n]
                     cse_next(iiii)=resized_csn_next((sol.part_nb_cell+1)*iiii);
                 end
@@ -651,12 +600,13 @@ classdef newton_solver_functions
                     end 
                 end
 
+                % Determine if solver must be stopped and display convergence data
+
                 if deb.prints>=2
                     
                     disp("newt_ite="+num2str(newt_ite)+" sol.time_ite="+num2str(sol.time_ite)+" residuals: coupled="+num2str(norm_delta_coupled)+" , ps="+num2str(norm_delta_ps)+" , pe="+num2str(norm_delta_pe) ...
                                                                              +" , ce="+num2str(norm_delta_ce)+" , csn="+num2str(norm_delta_csn)+" , csp="+num2str(norm_delta_csp))
                 end
-
 
                 %if (-(log10(max(hist.residuals(1,:)))-log10(hist.residuals(1,newt_ite)))<log10(newt_lim)) && newt_ite>1
                 %if (-(log10(max(hist.residuals(1,:)))-log10(min(hist.residuals(1,1:newt_ite))))<log10(newt_lim)) && newt_ite>1
@@ -688,11 +638,12 @@ classdef newton_solver_functions
 
             end
 
-            if sol.time_ite==sol.nb_steps && deb.prints>=4
+            if sol.time_ite==sol.nb_steps && deb.prints>=4  % Write the jacobian for debuging purposes
                 writetable(array2table(Jac_coupled),'Jac_coupled_.xlsx')
             end
 
-            if deb.prints>=0
+            % Save the end residuals 
+            if deb.prints>=0    
                 hist.residuals_time(1,sol.time_ite)=norm_delta_coupled;
                 hist.residuals_time(2,sol.time_ite)=norm_delta_ps;
                 hist.residuals_time(3,sol.time_ite)=norm_delta_pe;
@@ -711,6 +662,7 @@ classdef newton_solver_functions
                 end
             end
 
+            %Recompose cs vectors (concentration in the solid particles)
             csn_next  = reshape(resized_csn_next,sol.part_nb_cell+1,sol.nb_cell_n);
             csp_next  = reshape(resized_csp_next,sol.part_nb_cell+1,sol.nb_cell_n);
             
