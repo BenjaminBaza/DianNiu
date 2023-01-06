@@ -326,6 +326,7 @@ classdef equation_building_functions
 
         function Jac_fce = LHS_Jac_f_Fdiff_ce(obj,pe,ps,ce,cse,T,Ueq,D,dx,source,change_D)
             dc_prop=1.0001;
+            disp(ce)
             len=length(ce);
             Jac_fce=zeros(len);
             

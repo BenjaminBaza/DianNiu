@@ -122,7 +122,11 @@ classdef newton_solver_functions
                     end            
     
                     Jac_f_ce_next = eq_build_fun.LHS_Jac_f_Fdiff_ce(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,p.De_eff,dx,source_ce,1);
-                    
+                    %job_obj = batch(eq_build_fun.LHS_Jac_f_Fdiff_ce,1,{pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,p.De_eff,dx,source_ce,1})
+                    %job_obj = batch('Jac_f_ce_next = eq_build_fun.LHS_Jac_f_Fdiff_ce(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,p.De_eff,dx,source_ce,1)')
+                    %wait(job_obj);
+                    %load(job_obj,'Jac_f_ce_next');
+
                     if deb.timing_jacobian==1
                         deb.chrono_Jaccedce_singleite = deb.chrono_Jaccedce_singleite + toc(Calc_Jaccedce_timer);
                         Calc_Jacpedpe_timer=tic;
