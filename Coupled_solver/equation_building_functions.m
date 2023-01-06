@@ -54,10 +54,9 @@ classdef equation_building_functions
             lenc=len/lenr;
             Jac_fcs=zeros(len);
             
-            mock_source = source;
-            mock_j = fv.j;
-            mock_cse = cse;
+            
 
+            %parfor(i = 1:1:len)
             for i = 1:1:len   
                 i_rcell=mod(i,lenr);
                 if i_rcell==0
@@ -83,6 +82,7 @@ classdef equation_building_functions
 
                     if i==ii && i_rcell==lenr
                         mock_Ueq=Ueq;
+                        mock_cse=cse;
                         if electrode=="csn"
                             i_xfullcell=i_xcell;
                             i_xfullercell=i_xcell;
@@ -326,6 +326,7 @@ classdef equation_building_functions
 
         function Jac_fce = LHS_Jac_f_Fdiff_ce(obj,pe,ps,ce,cse,T,Ueq,D,dx,source,change_D)
             dc_prop=1.0001;
+            disp(ce)
             len=length(ce);
             Jac_fce=zeros(len);
             

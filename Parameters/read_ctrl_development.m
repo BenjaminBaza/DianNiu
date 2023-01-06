@@ -99,6 +99,10 @@ function read_ctrl_development()
     sol.newton_update_sources= 1;
     sol.newton_relax_factor = 0.8;
 
+    sol.nb_logi_cores= getenv('NUMBER_OF_PROCESSORS');
+    sol.nb_phys_cores= feature('numcores');
+    sol.nb_workers=max(1,sol.nb_phys_cores-1);
+
     %% Debug parameters
 
     global deb
@@ -112,7 +116,7 @@ function read_ctrl_development()
     deb.break_time_loop=0;
     deb.write_output_data=2; %1 to write final data, 2 to write all history data
 
-    deb.timing_jacobian=0;
+    deb.timing_jacobian=1;
     deb.chrono_matrix_inversion=0;
     deb.chrono_newtsol_setup=0;
     deb.chrono_newtsol_update=0;
