@@ -12,6 +12,17 @@ classdef equation_building_functions
             end
         end
 
+        function f = universal_discretization (obj,source,dxm,dxc,dxp,km,kc,kp,kdm,kdc,kdp,p1m,p1c,p1p,p2m,p2c,p2p)
+            global p
+            global sol
+            
+            f =  2*(kp*dxp+kc*dxc)*(p1p-p1c)/((dxc+dxp)^2) +  ...
+                2*(km*dxm+kc*dxc)*(p1m-p1c)/((dxc+dxm)^2) + ...
+                2*(kdp*dxp/p2p+kdc*dxc/p2c)*(p2p-p2c)/((dxc+dxp)^2) +  ...
+                2*(kdm*dxm/p2m+kdc*dxc/p2c)*(p2m-p2c)/((dxc+dxm)^2) + ...
+                dxc*source; 
+        end
+
         function fc = LHS_f_cs (obj,c,D,r,source)
             len=length(c);
             lenr=length(r);
@@ -320,13 +331,14 @@ classdef equation_building_functions
             global BC_fun
             [dxm,dxc,dxp,dummym,dummyc,dummyp,cm,cc,cp,Dm,Dc,Dp]=BC_fun.concentration_electrolyte_BC(c,c,dx,i,D);
                     
-            f = 2*(Dp*dxp+Dc*dxc)*(cp-cc)/((dxc+dxp)^2) +  ...
-                2*(Dm*dxm+Dc*dxc)*(cm-cc)/((dxc+dxm)^2)+ dxc*source(i);        
+            f = obj.universal_discretization (source(i),dxm,dxc,dxp,Dm,Dc,Dp,0,0,0,cm,cc,cp,1,1,1);
+
+            %f = 2*(Dp*dxp+Dc*dxc)*(cp-cc)/((dxc+dxp)^2) +  ...
+            %    2*(Dm*dxm+Dc*dxc)*(cm-cc)/((dxc+dxm)^2)+ dxc*source(i);        
         end
 
         function Jac_fce = LHS_Jac_f_Fdiff_ce(obj,pe,ps,ce,cse,T,Ueq,D,dx,source,change_D)
             dc_prop=1.0001;
-            disp(ce)
             len=length(ce);
             Jac_fce=zeros(len);
             
@@ -559,12 +571,14 @@ classdef equation_building_functions
         function f = LHS_f_pe_single_cell (obj,p,c,kappa,kappa_D,dx,source,i)
             global BC_fun
             [dxm,dxc,dxp,pm,pc,pp,cm,cc,cp,km,kc,kp,kdm,kdc,kdp]=BC_fun.Potential_electrolyte_BC(p,c,dx,i,kappa,kappa_D);
-                    
-            f =  2*(kp*dxp+kc*dxc)*(pp-pc)/((dxc+dxp)^2) +  ...
-                2*(km*dxm+kc*dxc)*(pm-pc)/((dxc+dxm)^2) + ...
-                2*(kdp*dxp/cp+kdc*dxc/cc)*(cp-cc)/((dxc+dxp)^2) +  ...
-                2*(kdm*dxm/cm+kdc*dxc/cc)*(cm-cc)/((dxc+dxm)^2) + ...
-                dxc*source(i);      
+                   
+            f = obj.universal_discretization (source(i),dxm,dxc,dxp,km,kc,kp,kdm,kdc,kdp,pm,pc,pp,cm,cc,cp);
+
+            %f =  2*(kp*dxp+kc*dxc)*(pp-pc)/((dxc+dxp)^2) +  ...
+            %    2*(km*dxm+kc*dxc)*(pm-pc)/((dxc+dxm)^2) + ...
+            %    2*(kdp*dxp/cp+kdc*dxc/cc)*(cp-cc)/((dxc+dxp)^2) +  ...
+            %    2*(kdm*dxm/cm+kdc*dxc/cc)*(cm-cc)/((dxc+dxm)^2) + ...
+            %    dxc*source(i);      
 
                 %2*(kdp*dxp+kdc*dxc)*(log(max(cp,0.0000001))-log(max(cc,0.0000001)))/((dxc+dxp)^2) +  ...
                 %2*(kdm*dxm+kdc*dxc)*(log(max(cm,0.0000001))-log(max(cc,0.0000001)))/((dxc+dxm)^2) + ...
@@ -815,14 +829,12 @@ classdef equation_building_functions
             global BC_fun
             [dxm,dxc,dxp,pm,pc,pp,sigm,sigc,sigp]=BC_fun.Potential_solid_BC(p,dx,i,sigma,separator_index,source_BC);
                     
+            f = obj.universal_discretization (source(i),dxm,dxc,dxp,sigm,sigc,sigp,0,0,0,pm,pc,pp,1,1,1);
+
             f =  2*(sigp*dxp+sigc*dxc)*(pp-pc)/((dxc+dxp)^2) +  ...
                 2*(sigm*dxm+sigc*dxc)*(pm-pc)/((dxc+dxm)^2) + ...
                 dxc*source(i); 
-            if i==1 && print_info==1
-                disp("DEBUG BEN LHS_f_ps_single_cell "+num2str(f)+"  "+num2str(dxc*source(i))+"  "+num2str(2*(sigp*dxp+sigc*dxc)*(pp-pc)/((dxc+dxp)^2) +2*(sigm*dxm+sigc*dxc)*(pm-pc)/((dxc+dxm)^2)))
-                disp("DEBUG BEN LHS_f_ps_single_cell "+num2str(pc)+"  "+num2str(pp)+"  "+num2str(pm))
-                disp("DEBUG BEN LHS_f_ps_single_cell "+num2str(2*(sigm*dxm+sigc*dxc)*(pm-pc)/((dxc+dxm)^2))+"  "+num2str((sigm*dxm+sigc*dxc))+"  "+num2str((dxc+dxm)^2))
-            end
+            
         end
 
         function fp = LHS_f_ps (obj,p,c,sigma,dx,source,separator_index,source_BC,ID,print_info)

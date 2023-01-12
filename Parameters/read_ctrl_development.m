@@ -364,4 +364,32 @@ function read_ctrl_development()
     hist.newt_it_number		= zeros(1,sol.nb_steps);
     hist.delta_coupled		= zeros(1,(sol.nb_cell_n+sol.nb_cell_p)*(sol.part_nb_cell+1)+3*sol.nb_cell-sol.nb_cell_s);
 
+    hist.maxjn= -1000000000;
+    hist.minjn=  1000000000;
+    hist.maxjp= -1000000000;
+    hist.minjp=  1000000000;
+
+    hist.maxdt= -1000000000;
+    hist.mindt=  1000000000;
+    
+    hist.maxcsn=-1000000000;
+    hist.mincsn= 1000000000;
+    hist.maxcsp=-1000000000;
+    hist.mincsp= 1000000000;
+
+    hist.maxdcsn=0;
+    hist.mindcsn=0;
+    hist.maxdcsp=0;
+    hist.mindcsp=0;
+    
+    hist.maxdcs_0csn=0;
+    hist.maxdcs_Rcsn=0;
+    hist.mindcs_0csn=0;
+    hist.mindcs_Rcsn=0;
+
+    hist.maxdcs_0csp=0;
+    hist.maxdcs_Rcsp=0;
+    hist.mindcs_0csp=0;
+    hist.mindcs_Rcsp=0;
+
 end

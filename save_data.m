@@ -19,11 +19,14 @@ function save_data()
     %writestruct(sol , deb.folder_name+'/sol.xls');
 
 
-    value=[deb.case_name, sol.nb_cell_n, sol.nb_cell_s, sol.nb_cell_p, sol.part_nb_cell, fv.V, fv.SOC_neg, fv.SOC_pos, hist.charge_time, sol.time_tot];
+    value =[deb.case_name, sol.nb_cell_n, sol.nb_cell_s, sol.nb_cell_p, sol.part_nb_cell, fv.V, fv.SOC_neg, fv.SOC_pos, hist.charge_time, sol.time_tot];
+    value2=[deb.case_name, sol.nb_cell_n, sol.nb_cell_s, sol.nb_cell_p, sol.part_nb_cell, hist.maxjn, hist.minjn, hist.maxjp, hist.minjp, hist.maxdt, hist.mindt, ...
+            hist.maxcsn, hist.mincsn, hist.maxcsp, hist.mincsp, hist.maxdcsn, hist.mindcsn, hist.maxdcsp, hist.mindcsp];
     [num,txt,raw] = xlsread('../Saved_data_DFN_DianNiu/Data_recap.xlsx');
     rawsize=size(raw);
     xlRange = "A"+num2str(rawsize(1)+1);
     xlswrite('../Saved_data_DFN_DianNiu/Data_recap.xlsx',value,'Sheet1',xlRange);
+    xlswrite('../Saved_data_DFN_DianNiu/Data_recap.xlsx',value2,'Sheet2',xlRange);
 
     if deb.write_output_data>1
 
