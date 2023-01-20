@@ -126,8 +126,9 @@ function DFN_solver()
             deb.chrono_Jaccsdcs_singleite=0;
         end
 
-        if (dV_dt<-sol.max_allowed_voltage_time_differential && fv.SOC_neg<0.2) || (dV_dt>sol.max_allowed_voltage_time_differential && fv.SOC_neg>0.8) || ...
-                    ((min(fv.SOC_neg,fv.SOC_pos)<-0.00000001 || max(fv.SOC_neg,fv.SOC_pos)>1.00000001) && not(ex.I_array(sol.time_ite)==0))
+        if ((dV_dt<-sol.max_allowed_voltage_time_differential && fv.SOC_neg<0.2) || (dV_dt>sol.max_allowed_voltage_time_differential && fv.SOC_neg>0.8) ...
+                    || ((min(fv.SOC_neg,fv.SOC_pos)<-0.00000001 || max(fv.SOC_neg,fv.SOC_pos)>1.00000001) )) ...
+                    && not(ex.I_array(sol.time_ite)==0)
 
             ex.I_array(sol.time_ite+1:length(sol.time_array)) = 0 ;
             hist.charge_time = sol.time;

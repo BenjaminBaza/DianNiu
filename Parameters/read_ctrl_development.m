@@ -10,7 +10,7 @@ function read_ctrl_development()
 
     %% Parameter functions class
     global param_functions
-    param_functions=param_functions_LGM50;
+    param_functions=param_functions_LGM50_test;
 
     %% Geometric characteristics
 
@@ -51,7 +51,7 @@ function read_ctrl_development()
     sol.time_ite = 0;
 
 
-    sol.time_tot    = 4200.0; %10800;                     %Total time of the simulation [s]
+    sol.time_tot    = 4500.0;                    %Total time of the simulation [s]
     sol.time        = 0.0; %10800;                     %Total time of the simulation [s]
     sol.dt          = 0.    ;%1.                        %Time step for the time discretization [s]
     sol.max_dt      = 10.    ;%1.                        %Maximum time step for the time discretization [s]
@@ -63,9 +63,9 @@ function read_ctrl_development()
     sol.min_allowed_voltage = 2.4 ; %[V] (Not used in the solver at the moment)
     sol.max_allowed_voltage_time_differential = 2.;
 
-    sol.nb_cell_n   = 20;%30;%50;
+    sol.nb_cell_n   = 40;%30;%50;
     sol.nb_cell_s   = 3;%20;%50;
-    sol.nb_cell_p   = 20;%30;%50;
+    sol.nb_cell_p   = 40;%30;%50;
     sol.nb_cell     = sol.nb_cell_n + sol.nb_cell_s + sol.nb_cell_p ;   %
 
     sol.dxn         = p.Ln/sol.nb_cell_n;
@@ -302,14 +302,14 @@ function read_ctrl_development()
 
         subplot(2,5,[6,7])
         plot(c_array,cond_array,'LineWidth',2);
-        title('neg Ueq','fontsize',fs);
+        title('electrolyteconductivity','fontsize',fs);
         grid on
         grid minor
 
 
         subplot(2,5,[9,10])
         plot(c_array,diff_array,'LineWidth',2);
-        title('pos Ueq','fontsize',fs);
+        title('electrolyte diffusivity','fontsize',fs);
         grid on
         grid minor
     end

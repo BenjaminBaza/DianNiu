@@ -273,7 +273,7 @@ classdef newton_solver_functions
 
                 assemble_coupled_timer=tic;
 
-                Jac_coupled = blkdiag(Jac_gcsn,Jac_gcsp,Jac_gce,Jac_gp,Jac_gps) ;
+                Jac_coupled = (blkdiag(Jac_gcsn,Jac_gcsp,Jac_gce,Jac_gp,Jac_gps)) ;
 
                 begin_csn =1;
                 end_csn   =(sol.part_nb_cell+1)*(sol.nb_cell_n);
@@ -298,7 +298,6 @@ classdef newton_solver_functions
                 Jac_coupled(begin_pe:end_pe,begin_ps:end_ps)=Jac_gpe_dps;
                 Jac_coupled(begin_pe:end_pe,begin_cs:end_cs)=Jac_gpe_dcs;
 
-
                 Jac_coupled(begin_ps:end_ps,begin_ce:end_ce)=Jac_gps_dce;
                 Jac_coupled(begin_ps:end_ps,begin_pe:end_pe)=Jac_gps_dpe;
                 Jac_coupled(begin_ps:end_ps,begin_cs:end_cs)=Jac_gps_dcs;
@@ -311,6 +310,10 @@ classdef newton_solver_functions
                 Jac_coupled(begin_csp:end_csp,begin_pe:end_pe)=Jac_gcsp_dpe;
                 Jac_coupled(begin_csp:end_csp,begin_ps:end_ps)=Jac_gcsp_dps;
 
+                Jac_coupled=sparse(Jac_coupled);
+
+                %figure(12454545);
+                %spy(Jac_coupled)
 
                 g_coupled   = cat(1,gcsn,gcsp);
                 g_coupled   = cat(1,g_coupled,gc);
