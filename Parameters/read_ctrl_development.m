@@ -51,7 +51,7 @@ function read_ctrl_development()
     sol.time_ite = 0;
 
 
-    sol.time_tot    = 4500.0;                    %Total time of the simulation [s]
+    sol.time_tot    = 2000.0;                    %Total time of the simulation [s]
     sol.time        = 0.0; %10800;                     %Total time of the simulation [s]
     sol.dt          = 0.    ;%1.                        %Time step for the time discretization [s]
     sol.max_dt      = 10.    ;%1.                        %Maximum time step for the time discretization [s]
@@ -59,14 +59,15 @@ function read_ctrl_development()
     sol.nb_steps    = 10000 ; %length(sol.time_array);    % Number of time states visited throughout the simulation
     sol.time_array  = zeros(1,sol.nb_steps) ; %sol.dt:sol.dt:sol.time_tot;  % array containing the time coordinate of each time step (may be redundant)
 
-    sol.max_allowed_voltage = 4.40 ; %[V] (Not used in the solver at the moment)
-    sol.min_allowed_voltage = 2.4 ; %[V] (Not used in the solver at the moment)
+    sol.max_allowed_voltage = 100.0 ; %[V] (Not used in the solver at the moment)
+    sol.min_allowed_voltage = 2.5 ; %[V] (Not used in the solver at the moment)
     sol.max_allowed_voltage_time_differential = 2.;
 
-    sol.nb_cell_n   = 40;%30;%50;
+    sol.nb_cell_n   = 160;%30;%50;
     sol.nb_cell_s   = 3;%20;%50;
-    sol.nb_cell_p   = 40;%30;%50;
+    sol.nb_cell_p   = 160;%30;%50;
     sol.nb_cell     = sol.nb_cell_n + sol.nb_cell_s + sol.nb_cell_p ;   %
+    sol.nb_cell_ps     = sol.nb_cell_n + sol.nb_cell_p ;   %
 
     sol.dxn         = p.Ln/sol.nb_cell_n;
     sol.dxs         = p.Ls/sol.nb_cell_s;
@@ -89,10 +90,12 @@ function read_ctrl_development()
     sol.cell_dx  = cat(1,sol.cell_dx,sol.dxp*ones(sol.nb_cell_p,1));
     sol.cell_center_coord_solid  = cat(1,sol.cell_center_coord(1:sol.nb_cell_n),sol.cell_center_coord(sol.nb_cell_n+sol.nb_cell_s+1:sol.nb_cell_n+sol.nb_cell_s+sol.nb_cell_p));
 
+    sol.part_nb_cell_array=[9,19,39,79,159];
 
-    sol.part_nb_cell= 19;%20;
+    sol.part_nb_cell= 79;%20;
     sol.particle_mesh_distribution_order= 2.0;
-    particle_mesh_generator()
+    sol.adjusted_position_a = zeros(1,sol.part_nb_cell+1);
+    particle_mesh_generator(2)
 
     sol.newton_meth_res_threshold=1e-6	;
     sol.newton_meth_max_ite=39;
@@ -116,7 +119,7 @@ function read_ctrl_development()
     deb.break_time_loop=0;
     deb.write_output_data=2; %1 to write final data, 2 to write all history data
 
-    deb.timing_jacobian=1;
+    deb.timing_jacobian=0;
     deb.chrono_matrix_inversion=0;
     deb.chrono_newtsol_setup=0;
     deb.chrono_newtsol_update=0;
@@ -197,7 +200,7 @@ function read_ctrl_development()
 
 
     % Solid phase diffusion coefficients
-    p.Dsn = 3.3e-14; %3.9e-14;  % neg. electrode diffusion coeff [m^2/s]
+    p.Dsn = 3.3e-14;  %3.3e-14; %3.9e-14;  % neg. electrode diffusion coeff [m^2/s]
     p.Dsp = 4.0e-15; %1e-13;  % pos. electrode diffusion coeff [m^2/s]
 
 
@@ -227,7 +230,7 @@ function read_ctrl_development()
     %% External input
     global ex
     ex.temporary_Crate = 100000 ; 
-    ex.I_array  = 5.000 * ones(size(sol.time_array)) ; %0.5 * ones(size(sol.time_array));%ex.temporary_Crate*ones(size(sol.time_array));  % Array containing the input current intensity at each time step (may be redundant)
+    ex.I_array  = 10. * ones(size(sol.time_array)) ; %0.5 * ones(size(sol.time_array));%ex.temporary_Crate*ones(size(sol.time_array));  % Array containing the input current intensity at each time step (may be redundant)
     % 1C=5A
 
 
@@ -312,6 +315,8 @@ function read_ctrl_development()
         title('electrolyte diffusivity','fontsize',fs);
         grid on
         grid minor
+
+        saveas(gcf,deb.graph_folder_name+'Parameter_functions');
     end
 
     fv.pe  = ini.pe0 * ones(sol.nb_cell,1);
@@ -343,12 +348,17 @@ function read_ctrl_development()
     hist.ce  = zeros(length(fv.ce),sol.nb_steps+1);
     hist.pe  = zeros(length(fv.pe),sol.nb_steps+1);
     hist.ps  = zeros(length(fv.ps),sol.nb_steps+1);
+    hist.sourceps  = zeros(length(fv.ps),sol.nb_steps+1);
+    hist.sourcepsBC  = zeros(sol.nb_steps+1,1);
     hist.Ueq = zeros(length(fv.Ueq),sol.nb_steps+1);
     hist.j   = zeros(length(fv.j),sol.nb_steps+1);
     hist.V   = zeros(1,sol.nb_steps);
+    hist.V(1)   = ini.psp0 - ini.psn0;
     hist.SOC_neg   = zeros(1,sol.nb_steps);
     hist.SOC_pos   = zeros(1,sol.nb_steps);
     hist.charge_time=0;
+    hist.charge_ite=2;
+
 
     hist.csn(:,1) = reshape(fv.csn,sol.nb_cell_n*(sol.part_nb_cell+1),1);
     hist.csp(:,1) = reshape(fv.csp,sol.nb_cell_p*(sol.part_nb_cell+1),1);
@@ -363,6 +373,9 @@ function read_ctrl_development()
     hist.residuals_diff		= zeros(6,sol.nb_steps);
     hist.newt_it_number		= zeros(1,sol.nb_steps);
     hist.delta_coupled		= zeros(1,(sol.nb_cell_n+sol.nb_cell_p)*(sol.part_nb_cell+1)+3*sol.nb_cell-sol.nb_cell_s);
+
+    hist.sum_j_pos_electrode    = zeros(1,sol.nb_steps);
+    hist.sum_j_neg_electrode    = zeros(1,sol.nb_steps);
 
     hist.maxjn= -1000000000;
     hist.minjn=  1000000000;

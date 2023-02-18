@@ -29,11 +29,14 @@ function DFN_solver()
         sol.time_ite=sol.time_ite+1;
 
         max_dt=sol.max_dt;
-        if (ex.I_array(sol.time_ite)>0 && min(fv.SOC_neg,fv.SOC_pos)<0.005) || (ex.I_array(sol.time_ite)<0 && max(fv.SOC_neg,fv.SOC_pos)>0.995)
+        if ((ex.I_array(sol.time_ite)>0 && ((min(fv.SOC_neg,fv.SOC_pos)<0.005) || ((fv.V - sol.min_allowed_voltage)<0.05)))) ...
+        || ((ex.I_array(sol.time_ite)<0 && ((max(fv.SOC_neg,fv.SOC_pos)>0.995) || ((sol.max_allowed_voltage - fv.V)<0.05))))
             max_dt=sol.quick_dt;
         end
 
-        if sol.time_ite<10
+        if sol.time_ite<=20
+            sol.dt=sol.quick_dt;
+        elseif sol.time_ite==21
             sol.dt=max_dt;        
         else
             if sol.dt>max_dt
@@ -69,7 +72,7 @@ function DFN_solver()
             break
         end
 
-        dV_dt=(hist.V(sol.time_ite_save)-hist.V(max(sol.time_ite_save-1,1)))/sol.dt;
+        dV_dt=(hist.V(sol.time_ite_save+1)-hist.V(max(sol.time_ite_save,1)))/sol.dt;
 
         sol.newt_ite_chrono= toc(newt_timer)-newt_chrono;
         %disp("ite "+int2str(sol.time_ite)+" at time "+num2str(sol.time)+"s I="+num2str(ex.I_array(sol.time_ite))+ ...
@@ -81,22 +84,28 @@ function DFN_solver()
                 "V SOCn="+num2str(fv.SOC_neg)+" SOCp="+num2str(fv.SOC_pos)+" dt="+num2str(sol.dt)+ ...
                 " dV/dt="+num2str(dV_dt)+"\n")
 
-        disp("      avg(ce)="+num2str(mean(fv.ce))+" avg(csn)="+num2str(mean(mean(fv.csn)))+" avg(csp)="+num2str(mean(mean(fv.csp)))+" memory="+num2str(user.MemUsedMATLAB) ...
-            +" PreNewt="+num2str(deb.chrono_newtsol_setup_singleite)+"s MatInv="+num2str(deb.chrono_matrix_inversion_singleite) ...
-            +"s PostNewt="+num2str(deb.chrono_newtsol_update_singleite) )
+        disp("   av(ce)="+num2str(mean(fv.ce))+" av(csn)="+num2str(mean(mean(fv.csn)))+" av(csp)="+num2str(mean(mean(fv.csp)))+ ...
+            " av(pe)="+num2str(mean(fv.pe))+" av(psn)="+num2str(mean(mean(fv.ps(1:sol.nb_cell_n))))+" av(psp)="+num2str(mean(mean(fv.ps(sol.nb_cell_n+1:sol.nb_cell_ps))))+...
+            " av(jn)="+num2str(mean(mean(fv.j(1:sol.nb_cell_n))))+" av(jp)="+num2str(mean(mean(fv.j(sol.nb_cell-sol.nb_cell_p+1:sol.nb_cell))))+" mi(csn)="+num2str(min(min(fv.csn))))
 
-        disp("      updt dtso="+num2str(deb.chrono_updt_dtso_singleite)+"s Calc Jac="+num2str(deb.chrono_Calc_Jac_singleite) ...
-            +"s Calc f="+num2str(deb.chrono_Calc_f_singleite) +"s Calc gJacg="+num2str(deb.chrono_Calc_gJacg_singleite) ...
-            +"s assemble="+num2str(deb.chrono_assemble_coupled_singleite)  )
-        
-        disp("      jacdiag="+num2str(deb.chrono_Jacdiag_singleite)+"s jacce="+num2str(deb.chrono_Jacce_singleite) ...
-            +"s jacpe="+num2str(deb.chrono_Jacpe_singleite) +"s jacps="+num2str(deb.chrono_Jacps_singleite) ...
-            +"s jaccsn="+num2str(deb.chrono_Jaccsn_singleite) +"s jaccsp="+num2str(deb.chrono_Jaccsp_singleite)  +"s")
 
         if deb.timing_jacobian==1
+            disp(" memory="+num2str(user.MemUsedMATLAB) ...
+                +" PreNewt="+num2str(deb.chrono_newtsol_setup_singleite)+"s MatInv="+num2str(deb.chrono_matrix_inversion_singleite) ...
+                +"s PostNewt="+num2str(deb.chrono_newtsol_update_singleite) )
+
+            disp("      updt dtso="+num2str(deb.chrono_updt_dtso_singleite)+"s Calc Jac="+num2str(deb.chrono_Calc_Jac_singleite) ...
+                +"s Calc f="+num2str(deb.chrono_Calc_f_singleite) +"s Calc gJacg="+num2str(deb.chrono_Calc_gJacg_singleite) ...
+                +"s assemble="+num2str(deb.chrono_assemble_coupled_singleite)  )
+            
+            disp("      jacdiag="+num2str(deb.chrono_Jacdiag_singleite)+"s jacce="+num2str(deb.chrono_Jacce_singleite) ...
+                +"s jacpe="+num2str(deb.chrono_Jacpe_singleite) +"s jacps="+num2str(deb.chrono_Jacps_singleite) ...
+                +"s jaccsn="+num2str(deb.chrono_Jaccsn_singleite) +"s jaccsp="+num2str(deb.chrono_Jaccsp_singleite)  +"s")
+
+
             disp("      jaccedce="+num2str(deb.chrono_Jaccedce_singleite)+" jacpedpe="+num2str(deb.chrono_Jacpedpe_singleite) ...
-            +"s jacpsdps="+num2str(deb.chrono_Jacpsdps_singleite)+"s jaccsdcs="+num2str(deb.chrono_Jaccsdcs_singleite) ...
-            +"s total="+num2str(deb.chrono_Jaccedce_singleite+deb.chrono_Jacpedpe_singleite+deb.chrono_Jacpsdps_singleite+deb.chrono_Jaccsdcs_singleite) )
+                +"s jacpsdps="+num2str(deb.chrono_Jacpsdps_singleite)+"s jaccsdcs="+num2str(deb.chrono_Jaccsdcs_singleite) ...
+                +"s total="+num2str(deb.chrono_Jaccedce_singleite+deb.chrono_Jacpedpe_singleite+deb.chrono_Jacpsdps_singleite+deb.chrono_Jaccsdcs_singleite) )
         end
 
         deb.chrono_newtsol_setup = deb.chrono_newtsol_setup + deb.chrono_newtsol_setup_singleite;
@@ -127,16 +136,18 @@ function DFN_solver()
         end
 
         if ((dV_dt<-sol.max_allowed_voltage_time_differential && fv.SOC_neg<0.2) || (dV_dt>sol.max_allowed_voltage_time_differential && fv.SOC_neg>0.8) ...
-                    || ((min(fv.SOC_neg,fv.SOC_pos)<-0.00000001 || max(fv.SOC_neg,fv.SOC_pos)>1.00000001) )) ...
+                    || ((min(fv.SOC_neg,fv.SOC_pos)<-0.00000000001 || max(fv.SOC_neg,fv.SOC_pos)>1.00000000001) )) ...
+                    || (fv.V>sol.max_allowed_voltage || fv.V<sol.min_allowed_voltage) ...
                     && not(ex.I_array(sol.time_ite)==0)
 
             ex.I_array(sol.time_ite+1:length(sol.time_array)) = 0 ;
-            hist.charge_time = sol.time;
+            hist.charge_time = sol.time ;
+            hist.charge_ite  = sol.time_ite ;
             sol.dt=sol.max_dt;
         end
 
         newt_chrono=toc(newt_timer);
         
     end
-    disp("Solver ends. Estimated charge time "+num2str(hist.charge_time));
+    disp("Solver ends. Estimated charge time "+num2str(hist.charge_time)+" at ite "+num2str(hist.charge_ite));
 end

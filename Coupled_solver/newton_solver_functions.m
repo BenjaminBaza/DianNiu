@@ -454,141 +454,20 @@ classdef newton_solver_functions
                 ps_next = ps_next + relax_factor*delta_coupled(plateau:end_val);
 
 
-                plot_csp_local_newton_results=0;
-                if plot_csp_local_newton_results==1
-                    figure(2622222);
-                    fs = 16;
-                    set(gcf,'Position',[50 50 1800 1000]);     
-
-                    subplot(5,5,[1,2])
-                    plot(1:sol.nb_cell_p*lenr,transpose(delta_coupled(sol.nb_cell_n*lenr+1:sol.nb_cell_n*lenr+sol.nb_cell_p*lenr)),'LineWidth',2);
-                    title('delta coupled','fontsize',fs);
-                    grid on
-                    grid minor
-
-                    subplot(5,5,[4,5])
-                    plot(1:sol.nb_cell_p*lenr,resized_csp_next,'LineWidth',2);
-                    title('csp next','fontsize',fs);
-                    grid on
-                    grid minor
-
-                    subplot(5,5,[6,7])
-                    plot(1:sol.nb_cell_p,fv.j(sol.nb_cell_n+sol.nb_cell_s+1:sol.nb_cell),'LineWidth',2);
-                    title('j','fontsize',fs);
-                    grid on
-                    grid minor
-
-                    subplot(5,5,[9,10])
-                    plot(1:sol.nb_cell_p,source_csp,'LineWidth',2);
-                    title('source csp','fontsize',fs);
-                    grid on
-                    grid minor
-
-                    subplot(5,5,[11,12])
-                    plot(1:sol.nb_cell_n,cse_next(1:sol.nb_cell_n),'LineWidth',2);
-                    title('csen','fontsize',fs);
-                    grid on
-                    grid minor
-
-                    subplot(5,5,[14,15])
-                    plot(sol.nb_cell_n+1:2*sol.nb_cell_n,cse_next(sol.nb_cell_n+1:2*sol.nb_cell_n),'LineWidth',2);
-                    title('csep','fontsize',fs);
-                    grid on
-                    grid minor
-
-                    subplot(5,5,[16,17])
-                    plot(1:sol.nb_cell_p*lenr,gcsp,'LineWidth',2);
-                    title('gcsp','fontsize',fs);
-                    grid on
-                    grid minor
-
-                    subplot(5,5,[19,20])
-                    plot(1:sol.nb_cell_p*lenr,Mp*(resized_csp_next-resized_csp)/sol.dt,'LineWidth',2);
-                    title('M*dcsp/dt','fontsize',fs);
-                    grid on
-                    grid minor
-
-                    subplot(5,5,[21,22])
-                    plot(1:sol.nb_cell_p*lenr,- 0.5*(f_csp_next+f_csp),'LineWidth',2);
-                    title('-fcsp','fontsize',fs);
-                    grid on
-                    grid minor
-                end
-
-
-                plot_csn_local_newton_results=0;
-                if plot_csn_local_newton_results==1 && sol.time_ite>=19
-                    figure(266);
-                    fs = 16;
-                    set(gcf,'Position',[50 50 1800 1000]);     
-
-                    subplot(5,5,[1,2])
-                    plot(1:sol.nb_cell_n*lenr,transpose(delta_coupled(1:sol.nb_cell_n*lenr)),'LineWidth',2);
-                    title('delta coupled','fontsize',fs);
-                    grid on
-                    grid minor
-
-                    subplot(5,5,[4,5])
-                    plot(1:sol.nb_cell_n*lenr,resized_csn_next,'LineWidth',2);
-                    title('csn next','fontsize',fs);
-                    grid on
-                    grid minor
-
-                    subplot(5,5,[6,7])
-                    plot(1:sol.nb_cell_n,fv.j(1:sol.nb_cell_n),'LineWidth',2);
-                    title('j','fontsize',fs);
-                    grid on
-                    grid minor
-
-                    subplot(5,5,[9,10])
-                    plot(1:sol.nb_cell_n,source_csn,'LineWidth',2);
-                    title('source csn','fontsize',fs);
-                    grid on
-                    grid minor
-
-                    subplot(5,5,[11,12])
-                    plot(1:sol.nb_cell_n,cse_next(1:sol.nb_cell_n),'LineWidth',2);
-                    title('csen','fontsize',fs);
-                    grid on
-                    grid minor
-
-                    subplot(5,5,[14,15])
-                    plot(sol.nb_cell_n+1:2*sol.nb_cell_n,cse_next(sol.nb_cell_n+1:2*sol.nb_cell_n),'LineWidth',2);
-                    title('csep','fontsize',fs);
-                    grid on
-                    grid minor
-
-                    subplot(5,5,[16,17])
-                    plot(1:sol.nb_cell_n*lenr,gcsn,'LineWidth',2);
-                    title('gcsn','fontsize',fs);
-                    grid on
-                    grid minor
-
-                    subplot(5,5,[19,20])
-                    plot(1:sol.nb_cell_n*lenr,Mn*(resized_csn_next-resized_csn)/sol.dt,'LineWidth',2);
-                    title('M*dcsn/dt','fontsize',fs);
-                    grid on
-                    grid minor
-
-                    subplot(5,5,[21,22])
-                    plot(1:sol.nb_cell_n*lenr,- 0.5*(f_csn_next+f_csn),'LineWidth',2);
-                    title('-fcsn','fontsize',fs);
-                    grid on
-                    grid minor
-                end
-                 
-
 
                 % Bring variables back to normal levels
 
                 min_c=0.00000;
+                
+                resized_csn_next( resized_csn_next <= min_c ) = min_c;
+                resized_csp_next( resized_csp_next <= min_c ) = min_c;
+                ce_next( ce_next <= min_c ) = min_c;
 
-
-                for iiii=1:1:length(ce_next)
-                    if ce_next(iiii)<=0
-                        ce_next(iiii)=min_c;
-                    end
-                end
+                %for iiii=1:1:length(ce_next)
+                %    if ce_next(iiii)<=0
+                %        ce_next(iiii)=min_c;
+                %    end
+                %end
 
                 % Recompose cse (concentration at the surface of each particule.)
 
@@ -648,6 +527,9 @@ classdef newton_solver_functions
             if sol.time_ite==sol.nb_steps && deb.prints>=4  % Write the jacobian for debuging purposes
                 writetable(array2table(Jac_coupled),'Jac_coupled_.xlsx')
             end
+
+            hist.sourceps(:,sol.time_ite)=source_ps;
+            hist.sourcepsBC(sol.time_ite)=current_source_psBC(2);
 
             % Save the end residuals 
             if deb.prints>=0    

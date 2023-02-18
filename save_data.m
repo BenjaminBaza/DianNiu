@@ -1,4 +1,4 @@
-function save_data()
+function save_data(solver_chrono)
 	global p
 	global fv
 	global hist
@@ -12,21 +12,29 @@ function save_data()
     mkdir(deb.folder_name) 
     copyfile(deb.read_ctrl_file_name, deb.folder_name);
 
-    %writestruct(ex , deb.folder_name+'/ex.xls');
-    %writestruct(fv , deb.folder_name+'/fv.xls');
-    %writestruct(hist , deb.folder_name+'/hist.xls');
-    %writestruct(p , deb.folder_name+'/p.xls');
-    %writestruct(sol , deb.folder_name+'/sol.xls');
 
-
-    value =[deb.case_name, sol.nb_cell_n, sol.nb_cell_s, sol.nb_cell_p, sol.part_nb_cell, fv.V, fv.SOC_neg, fv.SOC_pos, hist.charge_time, sol.time_tot];
+    value =[deb.case_name, sol.nb_cell_n, sol.nb_cell_s, sol.nb_cell_p, sol.part_nb_cell, fv.V, fv.SOC_neg, fv.SOC_pos, hist.charge_time, sol.time_tot,solver_chrono];
     value2=[deb.case_name, sol.nb_cell_n, sol.nb_cell_s, sol.nb_cell_p, sol.part_nb_cell, hist.maxjn, hist.minjn, hist.maxjp, hist.minjp, hist.maxdt, hist.mindt, ...
             hist.maxcsn, hist.mincsn, hist.maxcsp, hist.mincsp, hist.maxdcsn, hist.mindcsn, hist.maxdcsp, hist.mindcsp];
+    value3=[deb.case_name, sol.nb_cell_n, sol.nb_cell_s, sol.nb_cell_p, sol.part_nb_cell, ...
+            hist.j(1,hist.charge_ite-1), hist.j(sol.nb_cell_n,hist.charge_ite-1), hist.j(sol.nb_cell_n+sol.nb_cell_s+1,hist.charge_ite-1), hist.j(sol.nb_cell,hist.charge_ite-1), ...
+            hist.ps(1,hist.charge_ite-1), hist.ps(sol.nb_cell_n,hist.charge_ite-1), hist.ps(sol.nb_cell_n+1,hist.charge_ite-1), hist.ps(sol.nb_cell_n+sol.nb_cell_p,hist.charge_ite-1), ...
+            hist.Ueq(1,hist.charge_ite-1), hist.Ueq(sol.nb_cell_n,hist.charge_ite-1), hist.Ueq(sol.nb_cell_n+sol.nb_cell_s+1,hist.charge_ite-1), hist.Ueq(sol.nb_cell,hist.charge_ite-1), ...
+            mean(hist.pe(:,hist.charge_ite-1)) , ...
+            hist.sum_j_neg_electrode(hist.charge_ite-1),hist.sum_j_pos_electrode(hist.charge_ite-1)];
+    value4=[deb.case_name, sol.nb_cell_n, sol.nb_cell_s, sol.nb_cell_p, sol.part_nb_cell, ...
+            hist.j(1,100), hist.j(sol.nb_cell_n,100), hist.j(sol.nb_cell_n+sol.nb_cell_s+1,100), hist.j(sol.nb_cell,100), ...
+            hist.ps(1,100), hist.ps(sol.nb_cell_n,100), hist.ps(sol.nb_cell_n+1,100), hist.ps(sol.nb_cell_n+sol.nb_cell_p,100), ...
+            hist.Ueq(1,100), hist.Ueq(sol.nb_cell_n,100), hist.Ueq(sol.nb_cell_n+sol.nb_cell_s+1,100), hist.Ueq(sol.nb_cell,100), ...
+            mean(hist.pe(:,100)) , ...
+            hist.sum_j_neg_electrode(100),hist.sum_j_pos_electrode(100)];
     [num,txt,raw] = xlsread('../Saved_data_DFN_DianNiu/Data_recap.xlsx');
     rawsize=size(raw);
     xlRange = "A"+num2str(rawsize(1)+1);
-    xlswrite('../Saved_data_DFN_DianNiu/Data_recap.xlsx',value,'Sheet1',xlRange);
-    xlswrite('../Saved_data_DFN_DianNiu/Data_recap.xlsx',value2,'Sheet2',xlRange);
+    xlswrite('../Saved_data_DFN_DianNiu/Data_recap.xlsx',value,'main info',xlRange);
+    xlswrite('../Saved_data_DFN_DianNiu/Data_recap.xlsx',value2,'limits',xlRange);
+    xlswrite('../Saved_data_DFN_DianNiu/Data_recap.xlsx',value3,'at discharge',xlRange);
+    xlswrite('../Saved_data_DFN_DianNiu/Data_recap.xlsx',value4,'at 1000 ite',xlRange);
 
     if deb.write_output_data>1
 
@@ -41,6 +49,7 @@ function save_data()
         hist.ps( :, ~any(hist.ps,1) ) = [];  %columns
         hist.j( :, ~any(hist.j,1) ) = [];  %columns
         hist.V( :, ~any(hist.V,1) ) = [];  %columns
+        sol.time_array( :, ~any(sol.time_array,1) ) = [];  %columns
         hist.Ueq( :, ~any(hist.Ueq,1) ) = [];  %columns
         hist.SOC_neg( :, ~any(hist.SOC_neg,1) ) = [];  %columns
         hist.SOC_pos( :, ~any(hist.SOC_pos,1) ) = [];  %columns
@@ -65,13 +74,16 @@ function save_data()
         disp('Writing j')
         writematrix(transpose(hist.j), deb.folder_name+'/hist_j.csv')  
         disp('Writing V')
-        writematrix(transpose(hist.V), deb.folder_name+'/hist_V.csv')  
+        array_loc=transpose(cat(1,cat(2,[0],sol.time_array),hist.V));
+        writematrix(array_loc, deb.folder_name+'/hist_V.csv')  
         disp('Writing Ueq')
         writematrix(transpose(hist.Ueq), deb.folder_name+'/hist_Ueq.csv')  
         disp('Writing SOCn')
-        writematrix(transpose(hist.SOC_neg), deb.folder_name+'/hist_SOC_neg.csv')  
+        array_loc=transpose(cat(1,sol.time_array,hist.SOC_neg));
+        writematrix(array_loc, deb.folder_name+'/hist_SOC_neg.csv')  
         disp('Writing SOCp')
-        writematrix(transpose(hist.SOC_pos), deb.folder_name+'/hist_SOC_pos.csv')  
+        array_loc=transpose(cat(1,sol.time_array,hist.SOC_pos));
+        writematrix(array_loc, deb.folder_name+'/hist_SOC_pos.csv')  
         disp('Writing residuals')
         writematrix(transpose(hist.residuals), deb.folder_name+'/hist_residuals.csv')  
         disp('Writing residuals time')

@@ -45,6 +45,11 @@ function main()
     global sol
 
     read_chrono=toc(read_timer);
+
+    %for part_discretization_nb = 1:1:length(sol.part_nb_cell_array)
+    %    sol.part_nb_cell= 19;%20;
+    %    particle_mesh_generator(2)
+
     %%%%%%%%%%%%%%%%% Run solver
     solver_timer=tic;
 
@@ -60,6 +65,7 @@ function main()
         mkdir(deb.graph_folder_name) 
 
         disp('Ploting results')
+        %% PDFs of individual values
         vis_fun.plot_data(sol.cell_center_coord,fv.pe,'x','Potential','Potential in electrolyte',10,'pe.pdf',"","")
         vis_fun.plot_data(sol.cell_center_coord,fv.ce,'x','Concentration','Li concentration in electrolyte',10,'ce.pdf',"","")
         vis_fun.plot_data_solid(sol.cell_center_coord,fv.ps,'x','Potential','Potential in solid',10,'ps.pdf',sol.nb_cell_n,sol.nb_cell_s,sol.nb_cell_p)
@@ -67,16 +73,21 @@ function main()
         vis_fun.plot_data(sol.cell_center_coord,fv.j,'x','j','Rate of charge flow throught solid particle surface',10,'j.pdf',"","")
         % vis_fun.plot_data(sol.time_array(1:sol.time_ite),hist.V(1:sol.time_ite),'time (s)','Voltage (V)','Cell voltage over time',10,'V.pdf',"","")
         vis_fun.plot_data(sol.time_array(1:sol.time_ite),hist.V(1:sol.time_ite),'time (s)','Voltage (V)','Cell voltage over time',10,'V.pdf',"Chen_2020_model_1C.txt","Chen_2020_expe_1C.txt")
-        % vis_fun.plot_complete_data('complete_field_values.png',sol.cell_center_coord,22289898,sol.nb_cell_n,sol.nb_cell_s,sol.nb_cell_p,sol.time_array);
-        vis_fun.plot_complete_data_spec_ite('complete_field_values_n_1.png',sol.cell_center_coord,24536789,sol.nb_cell_n,sol.nb_cell_s,sol.nb_cell_p,sol.time_array,sol.time_ite_save-1);
-        vis_fun.plot_complete_data_spec_ite('complete_field_values.png',sol.cell_center_coord,25679895,sol.nb_cell_n,sol.nb_cell_s,sol.nb_cell_p,sol.time_array,sol.time_ite_save);
-        vis_fun.plot_solid_concentration_data('solid_c_values.png',sol.cell_center_coord,2,sol.nb_cell_n,sol.nb_cell_s,sol.nb_cell_p,sol.time_array);
-        vis_fun.plot_solid_concentration_singlePart_data('solid_c_singlePart_values.png',sol.cell_center_coord,2,sol.nb_cell_n,sol.nb_cell_s,sol.nb_cell_p,sol.time_array);
+
+        % PNGs of grouped results
+        vis_fun.plot_complete_data_spec_ite('complete_field_values_n_1.png',sol.cell_center_coord,24536789,sol.nb_cell_n,sol.nb_cell_s,sol.nb_cell_p,sol.time_array,sol.time_ite_save-1,0);
+        vis_fun.plot_complete_data_spec_ite('complete_field_values.png',sol.cell_center_coord,25679895,sol.nb_cell_n,sol.nb_cell_s,sol.nb_cell_p,sol.time_array,sol.time_ite_save,1);
+        vis_fun.plot_complete_data_spec_ite('complete_field_values_charge.png',sol.cell_center_coord,95679455,sol.nb_cell_n,sol.nb_cell_s,sol.nb_cell_p,sol.time_array,hist.charge_ite,1);
+        vis_fun.plot_time_data('time_data.png',sol.cell_center_coord,25679888,sol.nb_cell_n,sol.nb_cell_s,sol.nb_cell_p,sol.time_array,sol.time_ite_save);
+        vis_fun.plot_solid_concentration_data('solid_c_values_fulltime.png',sol.cell_center_coord,2,sol.nb_cell_n,sol.nb_cell_s,sol.nb_cell_p,sol.time_array,sol.time_ite_save);
+        vis_fun.plot_solid_concentration_singlePart_data('solid_c_singlePart_values_fulltime.png',sol.cell_center_coord,2,sol.nb_cell_n,sol.nb_cell_s,sol.nb_cell_p,sol.time_array,sol.time_ite_save);
+        vis_fun.plot_solid_concentration_data('solid_c_values_charge.png',sol.cell_center_coord,2,sol.nb_cell_n,sol.nb_cell_s,sol.nb_cell_p,sol.time_array,hist.charge_ite);
+        vis_fun.plot_solid_concentration_singlePart_data('solid_c_singlePart_values_charge.png',sol.cell_center_coord,2,sol.nb_cell_n,sol.nb_cell_s,sol.nb_cell_p,sol.time_array,hist.charge_ite);
         
         if deb.prints>=0
-            vis_fun.plot_resuduals_DFN('DFN_res.png');
-            vis_fun.plot_resuduals_diff('Diff_res.png');
-            vis_fun.plot_resuduals_newt('Newt_res.png',sol.newt_ite);
+            vis_fun.plot_resuduals_DFN('DFN_res.png',0);
+            vis_fun.plot_resuduals_diff('Diff_res.png',0);
+            vis_fun.plot_resuduals_newt('Newt_res.png',sol.newt_ite,0);
         end    
     end
 
@@ -96,7 +107,7 @@ function main()
     write_timer=tic;
 
     if deb.write_output_data>=1
-        save_data();
+        save_data(solver_chrono);
     end
 
     write_chrono=toc(write_timer);

@@ -408,7 +408,9 @@ classdef visual_functions
             saveas(gcf,deb.graph_folder_name+file_name);
         end
         
-        function  outcome_loc=plot_complete_data(obj,file_name,x,fig_nb,nnb,snb,pnb,time_array)
+
+
+        function  outcome_loc=plot_complete_data_spec_ite(obj,file_name,x,fig_nb,nnb,snb,pnb,time_array,iteration, visib)
             global fv
             global hist
             global deb
@@ -423,216 +425,14 @@ classdef visual_functions
             temp=size(fv.cse);
             Nn2=temp(1);
 
-            
-            figure(fig_nb);
+            if visib==0
+                figure('visible','off');
+            else
+                figure(fig_nb);
+            end
+
             set(gcf,'Position',[50 50 1800 1000]);     
-            
-            subplot(5,5,[1,2])
-
-            cla;
-            plot(x,fv.ce,'r-','LineWidth',2);
-
-            if min(fv.ce) == max(fv.ce)
-                ylim([min(fv.ce) min(fv.ce)+0.00001]);
-            else
-                ylim([min(fv.ce) max(fv.ce)]);
-            end
-
-            ylabel('Concentration','FontSize',fs);
-            xlabel('x','FontSize',fs);
-        
-            title('Li concentration in electrolyte','fontsize',fs);
-            grid on
-            grid minor
-            set(gca,'FontSize', fs)
-            
-        
-
-            subplot(5,5,[4,5])
-
-            cla;
-            plot(x,fv.pe,'LineWidth',2);
-            ylim([min(fv.pe(:)) max(max(fv.pe(:)),min(fv.pe(:))+abs(min(fv.pe(:)))*0.0001)]);
-        
-            ylabel('Potential [V]','FontSize',fs);
-            xlabel('x','FontSize',fs);
-            
-            title('Potential in the electrolyte','fontsize',fs);
-            grid on
-            grid minor
-            set(gca,'FontSize', fs)
-
-
-
-            subplot(5,5,[6,7])
-
-            cla;
-            plot(x(1:nnb),fv.cse(1:nnb),'LineWidth',2);
-            ylim([min(fv.cse(1:nnb)) max(max(fv.cse(1:nnb)),min(fv.cse(1:nnb))+0.0001)]);
-        
-            ylabel('Concentration','FontSize',fs);
-            xlabel('x','FontSize',fs);
-            title('Li concentration at solid particles surface','fontsize',fs);
-            grid on
-            grid minor
-            set(gca,'FontSize', fs)
-
-
-
-            subplot(5,5,[9,10])
-
-            cla;
-            plot(x(nnb+snb+1:nnb+snb+pnb),fv.cse(nnb+1:nnb+pnb),'LineWidth',2);
-            ylim([min(fv.cse(nnb+1:nnb+pnb)) max(max(fv.cse(nnb+1:nnb+pnb)),min(fv.cse(nnb+1:nnb+pnb))+0.0001)]);
-        
-            ylabel('Concentration','FontSize',fs);
-            xlabel('x','FontSize',fs);
-            title('Li concentration at solid particles surface','fontsize',fs);
-            grid on
-            grid minor
-            set(gca,'FontSize', fs)
-        
-
-            
-            subplot(5,5,[11,12])
-
-            cla;
-            plot(x(1:nnb),fv.ps(1:nnb),'LineWidth',2);
-            
-            if max(fv.ps)==0
-                ylim([min(fv.ps(1:nnb)) 0.00000000001]);
-            else
-                ylim([min(fv.ps(1:nnb)) max(max(fv.ps(1:nnb)),min(fv.ps(1:nnb))+0.00000000001)]);
-            end
-            ylabel('Potential [V]','FontSize',fs);
-            xlabel('x','FontSize',fs);
-            title('Potential in the solid','fontsize',fs);
-            grid on
-            grid minor
-            set(gca,'FontSize', fs)        
-
-            
-            subplot(5,5,[14,15])
-
-            cla;
-            plot(x(nnb+snb+1:nnb+snb+pnb),fv.ps(nnb+1:nnb+pnb),'LineWidth',2);
-            if max(fv.ps)==0
-                ylim([min(fv.ps(nnb+1:nnb+pnb)) 0.00000000001]);
-            else
-                %disp([min(fv.ps(nnb+1:nnb+pnb)) max(max(fv.ps(nnb+1:nnb+pnb)),min(fv.ps(nnb+1:nnb+pnb))+0.00000000001)])
-                ylim([min(fv.ps(nnb+1:nnb+pnb)) max(max(fv.ps(nnb+1:nnb+pnb)),min(fv.ps(nnb+1:nnb+pnb))+0.00000000001)]);
-            end
-            ylabel('Potential [V]','FontSize',fs);
-            xlabel('x','FontSize',fs);
-            title('Potential in the solid','fontsize',fs);
-            grid on
-            grid minor
-            set(gca,'FontSize', fs)
-
-
-            
-            if sum(isnan(fv.j))==0 && sum(isinf(fv.j))==0
-                subplot(5,5,[16,17])
-
-                cla;
-                plot(x(1:nnb),fv.j(1:nnb),'LineWidth',2);
-                if max(fv.j(1:nnb))==0
-                    ylim([min(fv.j(1:nnb)) 0.00000000001]);
-                else
-                    ylim([min(fv.j(1:nnb)) max(max(fv.j(1:nnb)),min(fv.j(1:nnb))+abs(min(fv.j(1:nnb)))*0.00001+0.00000001)]);
-                end
-                ylabel('j','FontSize',fs);
-                xlabel('x','FontSize',fs);
-            
-                title('rate of positive charge flowing','fontsize',fs);
-                grid on
-                grid minor
-                set(gca,'FontSize', fs)
-
-                subplot(5,5,[19,20])
-
-                cla;
-                plot(x(nnb+snb+1:nnb+snb+pnb),fv.j(nnb+snb+1:nnb+snb+pnb),'LineWidth',2);
-                if max(fv.j(nnb+snb+1:nnb+snb+pnb))==0
-                    ylim([min(fv.j(nnb+snb+1:nnb+snb+pnb)) 0.00000000001]);
-                else
-                    ylim([min(fv.j(nnb+snb+1:nnb+snb+pnb)) max(max(fv.j(nnb+snb+1:nnb+snb+pnb)),min(fv.j(nnb+snb+1:nnb+snb+pnb))+abs(min(fv.j(nnb+snb+1:nnb+snb+pnb)))*0.0001+0.00000001)]);
-                end
-                ylabel('j','FontSize',fs);
-                xlabel('x','FontSize',fs);
-            
-                title('rate of positive charge flowing','fontsize',fs);
-                grid on
-                grid minor
-                set(gca,'FontSize', fs)
-            end
-
-
-            subplot(5,5,[21,22])
-
-            cla;
-            plot(time_array(1:sol.time_ite),hist.V(1:sol.time_ite),'LineWidth',2);
-            if max(hist.V(1:sol.time_ite))==0
-                ylim([min(hist.V(1:sol.time_ite)) 0.0000001]);
-            else
-                ylim([min(hist.V(1:sol.time_ite)) max(max(hist.V(1:sol.time_ite)),min(hist.V(1:sol.time_ite))+abs(min(hist.V(1:sol.time_ite)))*0.0001)]);
-            end
-            xlim([time_array(1) time_array(sol.time_ite)]);
-            ylabel('Voltage [V]','FontSize',fs);
-            xlabel('time [sec]','FontSize',fs);
-        
-            title('Cell voltage over time','fontsize',fs);
-            grid on
-            grid minor
-            set(gca,'FontSize', fs)
-            
-
-            subplot(5,5,[24,25])
-
-            cla;
-            plot(time_array(1:sol.time_ite),hist.SOC_neg(1:sol.time_ite),'LineWidth',2);
-            hold on
-            plot(time_array(1:sol.time_ite),hist.SOC_pos(1:sol.time_ite),'LineWidth',2);
-            ylim([0 1.0]);
-            xlim([time_array(1) time_array(sol.time_ite)]);
-            
-            ylabel('SOC','FontSize',fs);
-            xlabel('time [sec]','FontSize',fs);
-        
-            title('Cell State of Charge over time','fontsize',fs);
-            grid on
-            grid minor
-            set(gca,'FontSize', fs)
-
-
-
-            saveas(gcf,deb.graph_folder_name+file_name);
-
-
-
-        end
-
-
-        function  outcome_loc=plot_complete_data_spec_ite(obj,file_name,x,fig_nb,nnb,snb,pnb,time_array,iteration)
-            global fv
-            global hist
-            global deb
-            global sol
-            flag = 1;
-            outcome_loc=flag;
-            fs = 16;
-
-            
-            temp=size(fv.ce);
-            Nn=temp(1);
-            temp=size(fv.cse);
-            Nn2=temp(1);
-
-            
-            figure(fig_nb);
-            set(gcf,'Position',[50 50 1800 1000]);     
-            
-            subplot(5,5,[1,2])
+            subplot(4,5,[1,2])
 
             cla;
             plot(x,hist.ce(:,iteration+1),'r-','LineWidth',2);
@@ -653,11 +453,11 @@ classdef visual_functions
             
         
 
-            subplot(5,5,[4,5])
+            subplot(4,5,[4,5])
             
             cla;
             plot(x,hist.pe(:,iteration+1),'LineWidth',2);
-            ylim([min(hist.pe(:,iteration+1)) max(max(hist.pe(:,iteration+1)),min(hist.pe(:,iteration+1))+abs(min(hist.pe(:,iteration+1)))*0.0001)]);
+            ylim([min(hist.pe(:,iteration+1)) max(max(hist.pe(:,iteration+1)),(min(hist.pe(:,iteration+1)))+0.000000001)]);
         
             ylabel('Potential [V]','FontSize',fs);
             xlabel('x','FontSize',fs);
@@ -669,7 +469,7 @@ classdef visual_functions
 
 
 
-            subplot(5,5,[6,7])
+            subplot(4,5,[6,7])
 
             cla;
             plot(x(1:nnb),hist.cse(1:nnb,iteration+1),'LineWidth',2);
@@ -684,7 +484,7 @@ classdef visual_functions
 
 
 
-            subplot(5,5,[9,10])
+            subplot(4,5,[9,10])
 
             cla;
             plot(x(nnb+snb+1:nnb+snb+pnb),hist.cse(nnb+1:nnb+pnb,iteration+1),'LineWidth',2);
@@ -699,7 +499,7 @@ classdef visual_functions
         
 
             
-            subplot(5,5,[11,12])
+            subplot(4,5,[11,12])
 
             cla;
             plot(x(1:nnb),hist.ps(1:nnb,iteration+1),'LineWidth',2);
@@ -717,7 +517,7 @@ classdef visual_functions
             set(gca,'FontSize', fs)        
 
             
-            subplot(5,5,[14,15])
+            subplot(4,5,[14,15])
 
             cla;
             plot(x(nnb+snb+1:nnb+snb+pnb),hist.ps(nnb+1:nnb+pnb,iteration+1),'LineWidth',2);
@@ -738,7 +538,7 @@ classdef visual_functions
 
             if sizzz(2)>=iteration
                 if sum(isnan(hist.j(:,iteration)))==0 && sum(isinf(hist.j(:,iteration)))==0
-                    subplot(5,5,[16,17])
+                    subplot(4,5,[16,17])
 
                     cla;
                     plot(x(1:nnb),hist.j(1:nnb,iteration),'LineWidth',2);
@@ -755,7 +555,7 @@ classdef visual_functions
                     grid minor
                     set(gca,'FontSize', fs)
 
-                    subplot(5,5,[19,20])
+                    subplot(4,5,[19,20])
 
                     cla;
                     plot(x(nnb+snb+1:nnb+snb+pnb),hist.j(nnb+snb+1:nnb+snb+pnb,iteration),'LineWidth',2);
@@ -775,14 +575,80 @@ classdef visual_functions
             end
 
 
-            subplot(5,5,[21,22])
+            %subplot(5,5,[21,22])
+            %
+            %cla;
+            %plot(time_array(1:sol.time_ite),hist.V(1:sol.time_ite),'LineWidth',2);
+            %if max(hist.V(1:sol.time_ite))==0
+            %    ylim([min(hist.V(1:sol.time_ite)) 0.0000001]);
+            %else
+            %    ylim([min(hist.V(1:sol.time_ite)) max(max(hist.V(1:sol.time_ite)),min(hist.V(1:sol.time_ite))+abs(min(hist.V(1:sol.time_ite)))*0.0001)]);
+            %end
+            %xlim([time_array(1) time_array(sol.time_ite)]);
+            %ylabel('Voltage [V]','FontSize',fs);
+            %xlabel('time [sec]','FontSize',fs);
+            %
+            %title('Cell voltage over time','fontsize',fs);
+            %grid on
+            %grid minor
+            %set(gca,'FontSize', fs)
+            %
+            %
+            %subplot(5,5,[24,25])
+            %
+            %cla;
+            %plot(time_array(1:sol.time_ite),hist.SOC_neg(1:sol.time_ite),'LineWidth',2);
+            %hold on
+            %plot(time_array(1:sol.time_ite),hist.SOC_pos(1:sol.time_ite),'LineWidth',2);
+            %ylim([min(0,min(min(hist.SOC_neg),min(hist.SOC_pos))) 1.0]);
+            %xlim([time_array(1) time_array(sol.time_ite)]);
+            %
+            %ylabel('SOC','FontSize',fs);
+            %xlabel('time [sec]','FontSize',fs);
+            %
+            %title('Cell State of Charge over time','fontsize',fs);
+            %grid on
+            %grid minor
+            %set(gca,'FontSize', fs)
+
+
+
+            saveas(gcf,deb.graph_folder_name+file_name);
+
+
+
+        end
+
+
+        function  outcome_loc=plot_time_data(obj,file_name,x,fig_nb,nnb,snb,pnb,time_array,iteration)
+            global fv
+            global hist
+            global deb
+            global sol
+            flag = 1;
+            outcome_loc=flag;
+            fs = 16;
+
+            
+            temp=size(fv.ce);
+            Nn=temp(1);
+            temp=size(fv.cse);
+            Nn2=temp(1);
+
+            
+            figure(fig_nb);
+            set(gcf,'Position',[50 50 1800 1000]);     
+            
+            
+
+            subplot(5,5,[1,2])
 
             cla;
-            plot(time_array(1:sol.time_ite),hist.V(1:sol.time_ite),'LineWidth',2);
-            if max(hist.V(1:sol.time_ite))==0
-                ylim([min(hist.V(1:sol.time_ite)) 0.0000001]);
+            plot(cat(2,[0],time_array(1:sol.time_ite)),hist.V(1:sol.time_ite+1),'LineWidth',2);
+            if max(hist.V(1:sol.time_ite+1))==0
+                ylim([min(hist.V(1:sol.time_ite+1)) 0.0000001]);
             else
-                ylim([min(hist.V(1:sol.time_ite)) max(max(hist.V(1:sol.time_ite)),min(hist.V(1:sol.time_ite))+abs(min(hist.V(1:sol.time_ite)))*0.0001)]);
+                ylim([min(hist.V(1:sol.time_ite+1)) max(max(hist.V(1:sol.time_ite+1)),min(hist.V(1:sol.time_ite+1))+abs(min(hist.V(1:sol.time_ite+1)))*0.0001)]);
             end
             xlim([time_array(1) time_array(sol.time_ite)]);
             ylabel('Voltage [V]','FontSize',fs);
@@ -794,7 +660,7 @@ classdef visual_functions
             set(gca,'FontSize', fs)
             
 
-            subplot(5,5,[24,25])
+            subplot(5,5,[4,5])
 
             cla;
             plot(time_array(1:sol.time_ite),hist.SOC_neg(1:sol.time_ite),'LineWidth',2);
@@ -812,9 +678,164 @@ classdef visual_functions
             set(gca,'FontSize', fs)
 
 
+            subplot(5,5,[6,7])
+
+            cla;
+            plot(time_array(1:hist.charge_ite),hist.sum_j_neg_electrode(1:hist.charge_ite),'LineWidth',2);
+            if max(hist.sum_j_neg_electrode(1:hist.charge_ite))==0
+                ylim([min(hist.sum_j_neg_electrode(1:hist.charge_ite)) 0.0000001]);
+            else
+                ylim([min(hist.sum_j_neg_electrode(1:hist.charge_ite)) max(max(hist.sum_j_neg_electrode(1:hist.charge_ite)),min(hist.sum_j_neg_electrode(1:hist.charge_ite))+abs(min(hist.sum_j_neg_electrode(1:hist.charge_ite)))*0.0001)]);
+            end
+            xlim([time_array(1) time_array(hist.charge_ite)]);
+            ylabel('sum j [V]','FontSize',fs);
+            xlabel('time [sec]','FontSize',fs);
+        
+            title('j sum in neg electrode over time','fontsize',fs);
+            grid on
+            grid minor
+            set(gca,'FontSize', fs)
+            
+
+            subplot(5,5,[9,10])
+
+            cla;
+            plot(time_array(1:hist.charge_ite),hist.sum_j_pos_electrode(1:hist.charge_ite),'LineWidth',2);
+            if max(hist.sum_j_pos_electrode(1:hist.charge_ite))==0
+                ylim([min(hist.sum_j_pos_electrode(1:hist.charge_ite)) 0.0000001]);
+            else
+                ylim([min(hist.sum_j_pos_electrode(1:hist.charge_ite)) max(max(hist.sum_j_pos_electrode(1:hist.charge_ite)),min(hist.sum_j_pos_electrode(1:hist.charge_ite))+abs(min(hist.sum_j_pos_electrode(1:hist.charge_ite)))*0.0001)]);
+            end
+            xlim([time_array(1) time_array(hist.charge_ite)]);
+            ylabel('sum j [V]','FontSize',fs);
+            xlabel('time [sec]','FontSize',fs);
+        
+            title('j sum in pos electrode over time','fontsize',fs);
+            grid on
+            grid minor
+            set(gca,'FontSize', fs)
+
+
+            subplot(5,5,[11,12])
+
+            cla;
+            V1=2;
+            plot(time_array(V1:hist.charge_ite),hist.j(1,V1:hist.charge_ite),'LineWidth',2);
+            if max(hist.j(1,V1:hist.charge_ite))==0
+                ylim([min(hist.j(1,V1:hist.charge_ite)) 0.0000001]);
+            else
+                ylim([min(hist.j(1,V1:hist.charge_ite)) max(max(hist.j(1,V1:hist.charge_ite)),min(hist.j(1,V1:hist.charge_ite))+abs(min(hist.j(1,V1:hist.charge_ite)))*0.0001)]);
+            end
+            xlim([time_array(1) time_array(hist.charge_ite)]);
+            ylabel('j [V]','FontSize',fs);
+            xlabel('time [sec]','FontSize',fs);
+        
+            title('j at x=0','fontsize',fs);
+            grid on
+            grid minor
+            set(gca,'FontSize', fs)
+            
+
+            subplot(5,5,[14,15])
+
+            cla;
+            V1=2;
+            plot(time_array(V1:hist.charge_ite),hist.j(sol.nb_cell,V1:hist.charge_ite),'LineWidth',2);
+            if max(hist.j(sol.nb_cell,V1:hist.charge_ite))==0
+                ylim([min(hist.j(sol.nb_cell,V1:hist.charge_ite)) 0.0000001]);
+            else
+                ylim([min(hist.j(sol.nb_cell,V1:hist.charge_ite)) max(max(hist.j(sol.nb_cell,V1:hist.charge_ite)),min(hist.j(sol.nb_cell,V1:hist.charge_ite))+abs(min(hist.j(sol.nb_cell,V1:hist.charge_ite)))*0.0001)]);
+            end
+            xlim([time_array(1) time_array(hist.charge_ite)]);
+            ylabel('j [V]','FontSize',fs);
+            xlabel('time [sec]','FontSize',fs);
+        
+            title('j at x=L','fontsize',fs);
+            grid on
+            grid minor
+            set(gca,'FontSize', fs)
+
+
+            subplot(5,5,[16,17])
+
+            cla;
+            V1=2;
+            plot(time_array(V1:hist.charge_ite),hist.ps(1,V1:hist.charge_ite),'LineWidth',2);
+            if max(hist.ps(1,V1:hist.charge_ite))==0
+                ylim([min(hist.ps(1,V1:hist.charge_ite)) 0.0000001]);
+            else
+                ylim([min(hist.ps(1,V1:hist.charge_ite)) max(max(hist.ps(1,V1:hist.charge_ite)),min(hist.ps(1,V1:hist.charge_ite))+abs(min(hist.ps(1,V1:hist.charge_ite)))*0.0001)]);
+            end
+            xlim([time_array(1) time_array(hist.charge_ite)]);
+            ylabel('ps [V]','FontSize',fs);
+            xlabel('time [sec]','FontSize',fs);
+        
+            title('ps at x=0','fontsize',fs);
+            grid on
+            grid minor
+            set(gca,'FontSize', fs)
+            
+
+            subplot(5,5,[19,20])
+
+            cla;
+            V1=2;
+            plot(time_array(V1:hist.charge_ite),hist.ps(sol.nb_cell-sol.nb_cell_s,V1:hist.charge_ite),'LineWidth',2);
+            if max(hist.ps(sol.nb_cell-sol.nb_cell_s,V1:hist.charge_ite))==0
+                ylim([min(hist.ps(sol.nb_cell-sol.nb_cell_s,V1:hist.charge_ite)) 0.0000001]);
+            else
+                ylim([min(hist.ps(sol.nb_cell-sol.nb_cell_s,V1:hist.charge_ite)) max(max(hist.ps(sol.nb_cell-sol.nb_cell_s,V1:hist.charge_ite)),min(hist.ps(sol.nb_cell-sol.nb_cell_s,V1:hist.charge_ite))+abs(min(hist.ps(sol.nb_cell-sol.nb_cell_s,V1:hist.charge_ite)))*0.0001)]);
+            end
+            xlim([time_array(1) time_array(hist.charge_ite)]);
+            ylabel('ps [V]','FontSize',fs);
+            xlabel('time [sec]','FontSize',fs);
+        
+            title('ps at x=L','fontsize',fs);
+            grid on
+            grid minor
+            set(gca,'FontSize', fs)
+
+
+            subplot(5,5,[21,22])
+
+            cla;
+            V1=2;
+            plot(time_array(V1:hist.charge_ite),hist.sourceps(sol.nb_cell_n+sol.nb_cell_p,V1:hist.charge_ite),'LineWidth',2);
+            if max(hist.sourceps(sol.nb_cell_n+sol.nb_cell_p,V1:hist.charge_ite))==0
+                ylim([min(hist.sourceps(sol.nb_cell_n+sol.nb_cell_p,V1:hist.charge_ite)) 0.0000001]);
+            else
+                ylim([min(hist.sourceps(sol.nb_cell_n+sol.nb_cell_p,V1:hist.charge_ite)) max(max(hist.sourceps(sol.nb_cell_n+sol.nb_cell_p,V1:hist.charge_ite)),min(hist.sourceps(sol.nb_cell_n+sol.nb_cell_p,V1:hist.charge_ite))+abs(min(hist.sourceps(sol.nb_cell_n+sol.nb_cell_p,V1:hist.charge_ite)))*0.0001)]);
+            end
+            xlim([time_array(1) time_array(hist.charge_ite)]);
+            ylabel('sourceps','FontSize',fs);
+            xlabel('time [sec]','FontSize',fs);
+        
+            title('sourceps at x=L','fontsize',fs);
+            grid on
+            grid minor
+            set(gca,'FontSize', fs)
+            
+
+            subplot(5,5,[24,25])
+
+            cla;
+            V1=2;
+            plot(time_array(V1:hist.charge_ite),hist.sourcepsBC(V1:hist.charge_ite),'LineWidth',2);
+            if max(hist.sourcepsBC(V1:hist.charge_ite))==0
+                ylim([min(hist.sourcepsBC(V1:hist.charge_ite)) 0.0000001]);
+            else
+                ylim([min(hist.sourcepsBC(V1:hist.charge_ite)) max(max(hist.sourcepsBC(V1:hist.charge_ite)),min(hist.sourcepsBC(V1:hist.charge_ite))+abs(min(hist.sourcepsBC(V1:hist.charge_ite)))*0.0001)]);
+            end
+            xlim([time_array(1) time_array(hist.charge_ite)]);
+            ylabel('sourceps BC [V]','FontSize',fs);
+            xlabel('time [sec]','FontSize',fs);
+        
+            title('sourceps BC at x=L','fontsize',fs);
+            grid on
+            grid minor
+            set(gca,'FontSize', fs)
 
             saveas(gcf,deb.graph_folder_name+file_name);
-
 
 
         end
@@ -840,11 +861,18 @@ classdef visual_functions
             end
         end
 
-        function outcome_loc= plot_resuduals_newt(obj,file_name,last_ite)
+        function outcome_loc= plot_resuduals_newt(obj,file_name,last_ite,visib)
             global hist
             global sol
             global deb
-            figure(234234234);
+
+            if visib==0
+                figure('visible','off');
+            else
+                figure(234234234);
+            end
+
+
             set(gcf,'Position',[50 50 1800 1000]);     
             clf;
             fs = 16;
@@ -922,11 +950,16 @@ classdef visual_functions
             saveas(gcf,deb.graph_folder_name+file_name);
         end
 
-        function outcome_loc= plot_resuduals_DFN(obj,file_name)
+        function outcome_loc= plot_resuduals_DFN(obj,file_name,visib)
             global hist
             global sol
             global deb
-            figure(234234235);
+
+            if visib==0
+                figure('visible','off');
+            else
+                figure(234234235);
+            end
             set(gcf,'Position',[50 50 1800 1000]);     
             clf;
             fs = 16;
@@ -995,11 +1028,17 @@ classdef visual_functions
             saveas(gcf,deb.graph_folder_name+file_name);
         end
 
-        function outcome_loc= plot_resuduals_diff(obj,file_name)
+        function outcome_loc= plot_resuduals_diff(obj,file_name,visib)
             global hist
             global sol
             global deb
-            figure('visible','off');
+
+            if visib==0
+                figure('visible','off');
+            else
+                figure(234234236);
+            end
+            
             set(gcf,'Position',[50 50 1800 1000]);     
             clf;
             fs = 16;
@@ -1080,7 +1119,7 @@ classdef visual_functions
         end
 
 
-        function  outcome_loc=plot_solid_concentration_data(obj,file_name,x,fig_nb,nnb,snb,pnb,time_array)
+        function  outcome_loc=plot_solid_concentration_data(obj,file_name,x,fig_nb,nnb,snb,pnb,time_array,ite)
             global fv
             global hist
             global sol
@@ -1101,7 +1140,7 @@ classdef visual_functions
             
             subplot(2,2,1)
             x=1:sol.nb_cell_n*(sol.part_nb_cell+1);
-            y=reshape(fv.csn,sol.nb_cell_n*(sol.part_nb_cell+1),1);
+            y=hist.csn(:,ite);
 
             cla;
             plot(x,y,'r-','LineWidth',2);
@@ -1115,13 +1154,13 @@ classdef visual_functions
             ylabel('csn','FontSize',fs);
             xlabel('x','FontSize',fs);
         
-            title('Li concentration in neg. electrode','fontsize',fs);
+            title("Li concentration in neg. electrode ite"+num2str(ite),'fontsize',fs);
             set(gca,'FontSize', fs)
             
 
             subplot(2,2,2)
             x=1:sol.nb_cell_p*(sol.part_nb_cell+1);
-            y=reshape(fv.csp,sol.nb_cell_p*(sol.part_nb_cell+1),1);
+            y=hist.csp(:,ite);
 
             cla;
             plot(x,y,'r-','LineWidth',2);
@@ -1135,13 +1174,13 @@ classdef visual_functions
             ylabel('csp','FontSize',fs);
             xlabel('x','FontSize',fs);
         
-            title('Li concentration in pos. electrode','fontsize',fs);
+            title("Li concentration in pos. electrode ite"+num2str(ite),'fontsize',fs);
             set(gca,'FontSize', fs)
         
 
             subplot(2,2,3)
             x=1:sol.nb_cell_n*(sol.part_nb_cell+1);
-            y=hist.csn(:,Nn-1);
+            y=hist.csn(:,ite-1);
 
             cla;
             plot(x,y,'r-','LineWidth',2);
@@ -1155,13 +1194,13 @@ classdef visual_functions
             ylabel('csn -','FontSize',fs);
             xlabel('x','FontSize',fs);
         
-            title('Li concentration in pos. electrode','fontsize',fs);
+            title("Li concentration in neg. electrode ite"+num2str(ite-1),'fontsize',fs);
             set(gca,'FontSize', fs)
         
 
             subplot(2,2,4)
             x=1:sol.nb_cell_p*(sol.part_nb_cell+1);
-            y=hist.csp(:,Nn2-1);
+            y=hist.csp(:,ite-1);
 
             cla;
             plot(x,y,'r-','LineWidth',2);
@@ -1175,7 +1214,7 @@ classdef visual_functions
             ylabel('csp -','FontSize',fs);
             xlabel('x','FontSize',fs);
         
-            title('Li concentration in pos. electrode','fontsize',fs);
+            title("Li concentration in pos. electrode ite"+num2str(ite-1),'fontsize',fs);
             set(gca,'FontSize', fs)
         
             
@@ -1188,7 +1227,7 @@ classdef visual_functions
         end
 
 
-        function  outcome_loc=plot_solid_concentration_singlePart_data(obj,file_name,x,fig_nb,nnb,snb,pnb,time_array)
+        function  outcome_loc=plot_solid_concentration_singlePart_data(obj,file_name,x,fig_nb,nnb,snb,pnb,time_array,ite)
             global fv
             global hist
             global sol
@@ -1209,7 +1248,7 @@ classdef visual_functions
             
             subplot(2,2,1)
             x=sol.part_coord_n;
-            y=hist.csn(1:sol.part_nb_cell+1,Nn);
+            y=hist.csn(1:sol.part_nb_cell+1,ite);
 
             cla;
             plot(x,y,'r-+','LineWidth',2);
@@ -1223,13 +1262,13 @@ classdef visual_functions
             ylabel('csn1','FontSize',fs);
             xlabel('x','FontSize',fs);
         
-            title('Li concentration in neg. electrode','fontsize',fs);
+            title("Li concentration in neg. electrode ite"+num2str(ite),'fontsize',fs);
             set(gca,'FontSize', fs)
             
 
             subplot(2,2,2)
             x=sol.part_coord_n;
-            y=hist.csn(sol.part_nb_cell+2:2*sol.part_nb_cell+2,Nn);
+            y=hist.csn(sol.part_nb_cell+2:2*sol.part_nb_cell+2,ite);
 
             cla;
             plot(x,y,'r-+','LineWidth',2);
@@ -1243,13 +1282,13 @@ classdef visual_functions
             ylabel('csn2','FontSize',fs);
             xlabel('x','FontSize',fs);
         
-            title('Li concentration in pos. electrode','fontsize',fs);
+            title("Li concentration in pos. electrode ite"+num2str(ite),'fontsize',fs);
             set(gca,'FontSize', fs)
         
 
             subplot(2,2,3)
             x=sol.part_coord_p;
-            y=hist.csp(1:sol.part_nb_cell+1,Nn2);
+            y=hist.csp(1:sol.part_nb_cell+1,ite);
 
             cla;
             plot(x,y,'r-+','LineWidth',2);
@@ -1263,13 +1302,13 @@ classdef visual_functions
             ylabel('csp1','FontSize',fs);
             xlabel('x','FontSize',fs);
         
-            title('Li concentration in pos. electrode','fontsize',fs);
+            title("Li concentration in pos. electrode ite"+num2str(ite),'fontsize',fs);
             set(gca,'FontSize', fs)
         
 
             subplot(2,2,4)
             x=sol.part_coord_p;
-            y=hist.csp(sol.part_nb_cell+2:2*sol.part_nb_cell+2,Nn2);
+            y=hist.csp(sol.part_nb_cell+2:2*sol.part_nb_cell+2,ite);
 
             cla;
             plot(x,y,'r-+','LineWidth',2);
@@ -1283,7 +1322,7 @@ classdef visual_functions
             ylabel('csp2','FontSize',fs);
             xlabel('x','FontSize',fs);
         
-            title('Li concentration in pos. electrode','fontsize',fs);
+            title("Li concentration in pos. electrode ite"+num2str(ite),'fontsize',fs);
             set(gca,'FontSize', fs)
         
             

@@ -11,6 +11,7 @@ classdef boundary_condition_functions
             elseif i_rcell==1
                 rm=-r(i_rcell+1);   rc=r(i_rcell);  rp=r(i_rcell+1);
                 cm=c(i+1);          cc=c(i);        cp=c(i+1);
+                %cm=c(i);          cc=c(i);        cp=c(i+1);
             else
                 rm=r(i_rcell-1);    rc=r(i_rcell);  rp=r(i_rcell+1);
                 cm=c(i-1);          cc=c(i);        cp=c(i+1);
@@ -49,11 +50,8 @@ classdef boundary_condition_functions
             elseif i==1
                 dxm=dx(i);dxc=dx(i);dxp=dx(i+1);
                 cm=c(i);cc=c(i);cp=c(i+1);
-                if deb.safe_BC_mode==1
-                    pm=-p(i);pc=p(i);pp=p(i+1); % DEBUG BEN This BC forces potential to 0 at x=0. It is incorrect but completes closure of the system. This is temporary
-                else
-                    pm=p(i);pc=p(i);pp=p(i+1);  %the BC at the edge of the cell is zero gradient
-                end
+                pm=-p(i);pc=p(i);pp=p(i+1); % DEBUG BEN This BC forces potential to 0 at x=0. It is incorrect but completes closure of the system. This is temporary
+                %pm=p(i);pc=p(i);pp=p(i+1);  %the BC at the edge of the cell is zero gradient
                 Dm=D(i);Dc=D(i);Dp=D(i+1);
                 kDm=kD(i);kDc=kD(i);kDp=kD(i+1);
             else
@@ -74,8 +72,8 @@ classdef boundary_condition_functions
                 Dm=D(i-1);Dc=D(i);Dp=D(i);
             elseif i==1
                 dxm=dx(i);dxc=dx(i);dxp=dx(i+1);
-                %pm=p(i)-source_BC(1)*dxc;pc=p(i);pp=p(i+1); % This boundary is correct but apparently redundant. 
-                pm=0;pc=p(i);pp=p(i+1); % DEBUG BEN This BC forces potential to 0 at x=-dx/2. 
+                pm=p(i)-source_BC(1)*dxc;pc=p(i);pp=p(i+1); % This boundary is correct but apparently redundant. 
+                %pm=0;pc=p(i);pp=p(i+1); % DEBUG BEN This BC forces potential to 0 at x=-dx/2. 
                 %pm=-p(i);pc=p(i);pp=p(i+1);   % DEBUG BEN This BC forces potential to 0 at x=0. Which appears to be correct (see Plett and Qiao).
                 Dm=D(i);Dc=D(i);Dp=D(i+1);
             elseif i==separator_index

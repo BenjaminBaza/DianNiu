@@ -11,7 +11,9 @@ function save_fv_to_hist(ite)
     hist.ps(:,ite+1)  = fv.ps;
     hist.Ueq(:,ite+1) = fv.Ueq;
     hist.j(:,ite+1)   = fv.j;
-    hist.V(ite)       = fv.V;
+    hist.V(ite+1)       = fv.V;
+    hist.sum_j_pos_electrode(ite)       = mean( fv.j(1:sol.nb_cell_n) );
+    hist.sum_j_neg_electrode(ite)       = mean( fv.j(sol.nb_cell_n+sol.nb_cell_s+1 : sol.nb_cell) );
     hist.SOC_neg(ite)       = fv.SOC_neg;
     hist.SOC_pos(ite)       = fv.SOC_pos;
 
