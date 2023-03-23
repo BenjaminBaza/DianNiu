@@ -71,7 +71,7 @@ function DFN_equations_coupled_solver()
 
         [source_pe,source_ps,source_ce,source_csn,source_csp] = eq_build_fun.update_sources();
 
-        if deb.prints>5
+        if deb.prints>1
             disp("DEBUG BEN DFN_equations_coupled_solver j and sources for ps, pe and ce DFNeq "+num2str(sol.time_ite)+" "+num2str(solver_attempts))
             disp(transpose(fv.Ueq))
             disp(fv.csn)
@@ -123,6 +123,17 @@ function DFN_equations_coupled_solver()
     fv.csn=csn_next;
     fv.csp=csp_next;
     fv.cse=cat(2,fv.csn(length(sol.part_coord_n),:),fv.csp(length(sol.part_coord_p),:));
+
+
+    if deb.videos_generation==1
+        global vis_fun
+        vis_fun.animate_data('ce.avi',sol.cell_center_coord,ce_next_save,1,'x','c_e','Li concentration in electrolyte');
+        vis_fun.animate_data('pe.avi',sol.cell_center_coord,pe_next_save,2,'x','phi_e','Potential in electrolyte');
+        vis_fun.animate_data_solid('ps.avi',sol.cell_center_coord,ps_next_save(1:sol.nb_cell_n,:), ...
+                                    ps_next_save(sol.nb_cell_n+1:sol.nb_cell_n+sol.nb_cell_p,:),3,'x','phi_s','Potential in the solid' ...
+                                    , sol.nb_cell_n, sol.nb_cell_s, sol.nb_cell_p);
+    end
+
     
 
 

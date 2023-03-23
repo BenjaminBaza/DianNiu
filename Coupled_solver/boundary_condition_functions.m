@@ -82,7 +82,11 @@ classdef boundary_condition_functions
                 Dm=D(i-1);Dc=D(i);Dp=D(i);
             elseif i==separator_index+1
                 dxm=dx(i);dxc=dx(i);dxp=dx(i+1);
-                pm=p(i);pc=p(i);pp=p(i+1); %the BC at the edge of the electrode is zero gradient
+                if deb.safe_BC_mode==1
+                    pm=p(i-1);pc=p(i);pp=p(i+1); %DEBUG BEN This BC connects potential in the positive electrode to the negative electrode
+                else
+                    pm=p(i);pc=p(i);pp=p(i+1); %the BC at the edge of the electrode is zero gradient
+                end
                 Dm=D(i);Dc=D(i);Dp=D(i+1);
             else
                 dxm=dx(i-1);dxc=dx(i);dxp=dx(i+1);

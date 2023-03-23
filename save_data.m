@@ -57,6 +57,7 @@ function save_data(solver_chrono)
         hist.residuals_time( :, ~any(hist.residuals_time,1) ) = [];  %columns
         hist.residuals_diff( :, ~any(hist.residuals_diff,1) ) = [];  %columns
         hist.newt_it_number( :, ~any(hist.newt_it_number,1) ) = [];  %columns
+        hist.delta_coupled( :, ~any(hist.delta_coupled,1) ) = [];  %columns
 
         disp('Writing csn')
         writematrix(transpose(hist.csn), deb.folder_name+'/hist_csn.csv')  
@@ -91,6 +92,8 @@ function save_data(solver_chrono)
         writematrix(transpose(hist.residuals_diff), deb.folder_name+'/hist_residuals_diff.csv')  
         disp('Writing Newt ite')
         writematrix(transpose(hist.newt_it_number), deb.folder_name+'/hist_newt_it_number.csv')  
+        disp('Writing delta coupled')
+        writematrix(transpose(hist.delta_coupled), deb.folder_name+'/hist_delta_coupled.csv')  
     end
     disp('Done writing data')    
 
