@@ -62,9 +62,7 @@ classdef newton_solver_functions
             end
 
             %Update parameter functions 
-            if sol.newton_update_sources==1
-                [p.De_eff,kappa,p.kappa_D_eff] = eq_build_fun.update_param_functions(ce,cse);
-            end
+            [p.De_eff,kappa,p.kappa_D_eff] = eq_build_fun.update_param_functions(ce,cse);
 
 
             %calculate initial right hand side vectors (necessary for eqution with a time derivative (ie. for cs and ce))
@@ -80,7 +78,7 @@ classdef newton_solver_functions
             %% Start the newton method to solve g(c(t+dt))=0  (g(c(t+dt))=M(c(t+dt)-c(t))/dt -1/2 (f(t+dt)+f(t)))
 
 
-            if deb.prints>1
+            if deb.prints>5
                 disp("DEBUG BEN DFN_equations_coupled_solver j and sources for ps, pe and ce newt "+num2str(sol.time_ite))
                 disp(transpose(fv.Ueq))
                 disp(fv.csn)
@@ -102,11 +100,9 @@ classdef newton_solver_functions
                 end
 
                 %Update parameter functions and Butler-Volmer equation
-                if sol.newton_update_sources==1
-                    [p.De_eff,kappa,p.kappa_D_eff] = eq_build_fun.update_param_functions(ce_next,cse_next);
-                    fv.j=BV_fun.butler_volmer_equation(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,"newton_solver_functions next ite");
-                    [source_pe,source_ps,source_ce,source_csn,source_csp] = eq_build_fun.update_sources();
-                end
+                [p.De_eff,kappa,p.kappa_D_eff] = eq_build_fun.update_param_functions(ce_next,cse_next);
+                fv.j=BV_fun.butler_volmer_equation(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,"newton_solver_functions next ite");
+                [source_pe,source_ps,source_ce,source_csn,source_csp] = eq_build_fun.update_sources();
 
                 deb.chrono_updt_dtso_singleite = deb.chrono_updt_dtso_singleite + toc(update_dt_sources_timer);
                 Calc_Jac_timer=tic;
@@ -122,10 +118,7 @@ classdef newton_solver_functions
                     end            
     
                     Jac_f_ce_next = eq_build_fun.LHS_Jac_f_Fdiff_ce(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,p.De_eff,dx,source_ce,1);
-                    %job_obj = batch(eq_build_fun.LHS_Jac_f_Fdiff_ce,1,{pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,p.De_eff,dx,source_ce,1})
-                    %job_obj = batch('Jac_f_ce_next = eq_build_fun.LHS_Jac_f_Fdiff_ce(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,p.De_eff,dx,source_ce,1)')
-                    %wait(job_obj);
-                    %load(job_obj,'Jac_f_ce_next');
+                    
 
                     if deb.timing_jacobian==1
                         deb.chrono_Jaccedce_singleite = deb.chrono_Jaccedce_singleite + toc(Calc_Jaccedce_timer);
@@ -182,33 +175,7 @@ classdef newton_solver_functions
                     Jac_f_csp_dce_next = eq_build_fun.LHS_Jac_f_Fdiff_csdce(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,resized_csp_next,Dsp,rp,source_csp,"csp");
                     Jac_f_csp_dpe_next = eq_build_fun.LHS_Jac_f_Fdiff_csdpe(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,resized_csp_next,Dsp,rp,source_csp,"csp");
                     Jac_f_csp_dps_next = eq_build_fun.LHS_Jac_f_Fdiff_csdps(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,resized_csp_next,Dsp,rp,source_csp,"csp");
-                    deb.chrono_Jaccsp_singleite = deb.chrono_Jaccsp_singleite + toc(Calc_Jaccsp_timer);
-
-
-                    %if (1==0 | det(Jac_f_pe_next)==0)
-                    %    if (deb.prints>0)
-                    %        disp("The jacobian for the potential in the electrolyte has a determinant of 0. The diagonal boost method is used to make the matrix invertible.")
-                    %    end
-                    %    for iiii=1:1:len
-                    %        Jac_f_pe_next(iiii,iiii)=Jac_f_pe_next(iiii,iiii)*1.0000000001;
-                    %    end
-                    %end
-                    %if (1==0 | det(Jac_f_ps_next(1:sol.nb_cell_n,1:sol.nb_cell_n))==0)
-                    %    if (deb.prints>0)
-                    %        disp("The jacobian for the potential in the neg. electrode has a determinant of 0. The diagonal boost method is used to make the matrix invertible.")
-                    %    end
-                    %    for iiii=1:1:sol.nb_cell_n
-                    %        Jac_f_ps_next(iiii,iiii)=Jac_f_ps_next(iiii,iiii)*1.0000000001;
-                    %    end
-                    %end
-                    %if (1==0 | (det(Jac_f_ps_next(sol.nb_cell_n+1:sol.nb_cell_p+sol.nb_cell_n,sol.nb_cell_n+1:sol.nb_cell_p+sol.nb_cell_n))==0))
-                    %    if (deb.prints>0)
-                    %        disp("The jacobian for the potential in the pos. electrode has a determinant of 0. The diagonal boost method is used to make the matrix invertible.")
-                    %    end
-                    %    for iiii=sol.nb_cell_n+1:1:sol.nb_cell_p+sol.nb_cell_n
-                    %        Jac_f_ps_next(iiii,iiii)=Jac_f_ps_next(iiii,iiii)*1.0000000001;
-                    %    end
-                    %end
+                    deb.chrono_Jaccsp_singleite = deb.chrono_Jaccsp_singleite + toc(Calc_Jaccsp_timer);                
 
                 end
 
@@ -315,10 +282,10 @@ classdef newton_solver_functions
                 %figure(12454545);
                 %spy(Jac_coupled)
 
-                g_coupled   = cat(1,gcsn,gcsp);
-                g_coupled   = cat(1,g_coupled,gc);
-                g_coupled   = cat(1,g_coupled,gp);
-                g_coupled   = cat(1,g_coupled,gps);
+                g_coupled = cat(1,gcsn,gcsp);
+                g_coupled = cat(1,g_coupled,gc);
+                g_coupled = cat(1,g_coupled,gp);
+                g_coupled = cat(1,g_coupled,gps);
 
                 deb.chrono_assemble_coupled_singleite = deb.chrono_assemble_coupled_singleite + toc(assemble_coupled_timer);
                 deb.chrono_newtsol_setup_singleite = deb.chrono_newtsol_setup_singleite + toc(newt_solv_setup_timer);
@@ -369,7 +336,7 @@ classdef newton_solver_functions
                 hist.residuals(5,newt_ite)=norm_delta_csn;
                 hist.residuals(6,newt_ite)=norm_delta_csp;
 
-                if (deb.prints>=2) && (isnan(norm_delta_coupled)==1 | isreal(norm_delta_coupled)==0)
+                if (deb.prints>=5) %&& (isnan(norm_delta_coupled)==1 | isreal(norm_delta_coupled)==0)
                     
 
                     disp("DEBUG BEN j ------------------------------ newt_ite="+num2str(newt_ite)+" , time ite="+num2str(sol.time_ite))
@@ -463,11 +430,6 @@ classdef newton_solver_functions
                 resized_csp_next( resized_csp_next <= min_c ) = min_c;
                 ce_next( ce_next <= min_c ) = min_c;
 
-                %for iiii=1:1:length(ce_next)
-                %    if ce_next(iiii)<=0
-                %        ce_next(iiii)=min_c;
-                %    end
-                %end
 
                 % Recompose cse (concentration at the surface of each particule.)
 
@@ -478,13 +440,6 @@ classdef newton_solver_functions
                     cse_next(iiii+sol.nb_cell_n)=resized_csp_next((sol.part_nb_cell+1)*(iiii));
                 end
 
-                if deb.videos_generation==1
-                    if norm_delta_coupled>newt_lim
-                        ce_next_save(:,newt_ite)= ce_next;
-                        pe_next_save(:,newt_ite)= pe_next;
-                        ps_next_save(:,newt_ite)= ps_next;
-                    end 
-                end
 
                 % Determine if solver must be stopped and display convergence data
 
@@ -494,11 +449,7 @@ classdef newton_solver_functions
                                                                              +" , ce="+num2str(norm_delta_ce)+" , csn="+num2str(norm_delta_csn)+" , csp="+num2str(norm_delta_csp))
                 end
 
-                %if (-(log10(max(hist.residuals(1,:)))-log10(hist.residuals(1,newt_ite)))<log10(newt_lim)) && newt_ite>1
-                %if (-(log10(max(hist.residuals(1,:)))-log10(min(hist.residuals(1,1:newt_ite))))<log10(newt_lim)) && newt_ite>1
-                %if (norm_delta_coupled<newt_lim || (-(log10(max(hist.residuals(1,:)))-log10(min(hist.residuals(1,1:newt_ite))))<log10(newt_lim)-1)) && newt_ite>1
                 if (norm_delta_coupled<newt_lim) && newt_ite>1
-                    
                     if deb.prints>=0
                         disp("      Newton method for the coupled system converged:"+num2str(newt_ite)+" , "+num2str(norm_delta_coupled) ...
                                                                             +" , "+num2str(norm_delta_ps)+" , "+num2str(norm_delta_pe) ...

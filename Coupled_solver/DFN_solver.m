@@ -46,17 +46,9 @@ function DFN_solver()
             end
         end
 
-        if sol.coupling_scheme==0
-            %% Solve concentration in the solid particles.
-            run concentration_solid;
-            
-            %% Solve concentration in the electrolyte
-            run concentration_electrolyte;
-
-        elseif sol.coupling_scheme==1
-            %% Solve the eqautions of the DFN model (potential in the solid and electrolyte (ps and pe) and concentration in the electrolyte and in the solid (ce, cs)).
-            DFN_equations_coupled_solver();
-        end
+        
+        %% Solve the eqautions of the DFN model (potential in the solid and electrolyte (ps and pe) and concentration in the electrolyte and in the solid (ce, cs)).
+        DFN_equations_coupled_solver();
 
         sol.time=sol.time+sol.dt;
         sol.time_array(sol.time_ite) = sol.time;

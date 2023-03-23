@@ -39,12 +39,13 @@ classdef equation_building_functions
                 end
                 i_xcell=ceil(i/lenr);
                 sour=source(i_xcell);
-                fc(i)=obj.LHS_f_cs_single_cell(c,D,r,sour,i,i_rcell,0);     
+                fc(i)=obj.LHS_f_cs_single_cell(c,D(i_xcell),r,sour,i,i_rcell,0);     
             end
         end
 
         function f = LHS_f_cs_single_cell (obj,c,D,r,source,i,i_rcell,print_info)
             global BC_fun
+            global p
             [rm,rc,rp,cm,cc,cp]=BC_fun.concentration_solid_BC(c,r,i,source,D,i_rcell);
                     
             factor_plus = D * ((rp+rc)/2)^2 /(rp-rc);
@@ -80,7 +81,7 @@ classdef equation_building_functions
                 i_xcell=ceil(i/lenr);
                 sour=source(i_xcell);
 
-                fcs   =  obj.LHS_f_cs_single_cell (resize_cs,D,r,sour,i,i_rcell,0);
+                fcs   =  obj.LHS_f_cs_single_cell (resize_cs,D(i_xcell),r,sour,i,i_rcell,0);
                 for ii = max(1,i-1):1:min(len,i+1)
                     if (i_rcell==lenr && ii==i+1)||(i_rcell==1 && ii==i-1)
                         continue
@@ -122,7 +123,7 @@ classdef equation_building_functions
                         sour=obj.update_source_single_cell(i_xfullercell,mock_j,"cs");     
                     end
 
-                    fcs_diff   =  obj.LHS_f_cs_single_cell (cpdc,D,r,sour,i,i_rcell,0);
+                    fcs_diff   =  obj.LHS_f_cs_single_cell (cpdc,D(i_xcell),r,sour,i,i_rcell,0);
                     Jac_fcs(i,ii)= (fcs_diff-fcs)/(divider);
                     
                 end
@@ -165,7 +166,7 @@ classdef equation_building_functions
                 sour=source(i_xcell);
                 sour_save=sour;
 
-                fcs   =  obj.LHS_f_cs_single_cell (resize_cs,D,r,sour,i,i_rcell,0);
+                fcs   =  obj.LHS_f_cs_single_cell (resize_cs,D(i_xcell),r,sour,i,i_rcell,0);
 
                 cpdc=ce;
                 if not(cpdc(i_xfullcell)==0)
@@ -184,7 +185,7 @@ classdef equation_building_functions
                     sour=obj.update_source_single_cell(i_xfullcell,mock_j,"cs"); 
                 end
 
-                fcs_diff   =  obj.LHS_f_cs_single_cell (resize_cs,D,r,sour,i,i_rcell,0);
+                fcs_diff   =  obj.LHS_f_cs_single_cell (resize_cs,D(i_xcell),r,sour,i,i_rcell,0);
                 Jac_fcs(i,i_xfullcell)= (fcs_diff-fcs)/(divider);
                 %disp("DEBUG BEN LHS_Jac_f_Fdiff_cs_dce "+num2str(mock_j(i_xfullcell)-fv.j(i_xfullcell))+"  "+num2str(fv.j(i_xfullcell))+"  "+num2str(sour-sour_save)+"  "+num2str(sour)+"  "+num2str((fcs_diff-fcs)))
 
@@ -229,7 +230,7 @@ classdef equation_building_functions
                 sour_save=sour;
 
 
-                fcs   =  obj.LHS_f_cs_single_cell (resize_cs,D,r,sour,i,i_rcell,0);
+                fcs   =  obj.LHS_f_cs_single_cell (resize_cs,D(i_xcell),r,sour,i,i_rcell,0);
                 
                 
 
@@ -250,7 +251,7 @@ classdef equation_building_functions
                     sour=obj.update_source_single_cell(i_xfullcell,mock_j,"cs"); 
                 end
 
-                fcs_diff   =  obj.LHS_f_cs_single_cell (resize_cs,D,r,sour,i,i_rcell,0);
+                fcs_diff   =  obj.LHS_f_cs_single_cell (resize_cs,D(i_xcell),r,sour,i,i_rcell,0);
                 Jac_fcs(i,i_xfullcell)= (fcs_diff-fcs)/(divider);
             
             end
@@ -295,7 +296,7 @@ classdef equation_building_functions
                 sour=source(i_xcell);
                 sour_save=sour;
 
-                fcs   =  obj.LHS_f_cs_single_cell (resize_cs,D,r,sour,i,i_rcell,0);
+                fcs   =  obj.LHS_f_cs_single_cell (resize_cs,D(i_xcell),r,sour,i,i_rcell,0);
                 
                 cpdc=ps;
                 if not(cpdc(i_xfullcell)==0)
@@ -315,7 +316,7 @@ classdef equation_building_functions
                     sour=obj.update_source_single_cell(i_xfullercell,mock_j,"cs"); 
                 end
 
-                fcs_diff   =  obj.LHS_f_cs_single_cell (resize_cs,D,r,sour,i,i_rcell,0);
+                fcs_diff   =  obj.LHS_f_cs_single_cell (resize_cs,D(i_xcell),r,sour,i,i_rcell,0);
                 Jac_fcs(i,i_xfullcell)= (fcs_diff-fcs)/(divider);
             
             end
@@ -1099,30 +1100,39 @@ classdef equation_building_functions
             kappa_eff=zeros(sol.nb_cell,1);
             fv.Ueq=0*fv.Ueq;
 
-            if p.De_function_mode==1
-                for cccc = 1:1:length(ce)
-                    De(cccc) = obj.update_elec_diff_singlecell (cccc,ce);
-                    %De(cccc) = param_functions.electrolyte_diffusivity(ce(cccc))*p.De_eff_coeff(cccc);
-                end
+            for cccc = 1:1:sol.nb_cell_n
+                Dsn(cccc) = obj.update_neg_electrode_diffusivity (cccc,cse);
             end
 
-            if p.kappa_function_mode==1
-                for cccc = 1:1:length(ce)
-                    [kappa_eff(cccc), kappa_D_eff(cccc)]=obj.update_kappa_singlecell(cccc,ce);
-
-                    %kappa_eff(cccc) = param_functions.electrolyte_conductivity(ce(cccc))*p.De_eff_coeff(cccc);
-                    %kappa_D_eff(cccc) = kappa_eff(cccc)*2* p.Rg * ini.T0/p.Faraday * (p.t_plus-1);
-                end 
+            for cccc = 1:1:sol.nb_cell_p
+                Dsp(cccc) = obj.update_pos_electrode_diffusivity (cccc,cse);
             end
 
-            if p.kappa_function_mode==1
-                for cccc = 1:1:sol.nb_cell_n
-                    fv.Ueq(cccc) = param_functions.neg_electrode_Ueq(cse(cccc),cccc);
-                end
-                for cccc = sol.nb_cell_n+1:1:sol.nb_cell_n+sol.nb_cell_p
-                    fv.Ueq(cccc+sol.nb_cell_s) = param_functions.pos_electrode_Ueq(cse(cccc),cccc);
-                end
+            for cccc = 1:1:length(ce)
+                [kappa_eff(cccc), kappa_D_eff(cccc)]=obj.update_kappa_singlecell(cccc,ce);
+            end 
+
+            for cccc = 1:1:sol.nb_cell_n
+                fv.Ueq(cccc) = param_functions.neg_electrode_Ueq(cse(cccc),cccc);
             end
+            for cccc = sol.nb_cell_n+1:1:sol.nb_cell_n+sol.nb_cell_p
+                fv.Ueq(cccc+sol.nb_cell_s) = param_functions.pos_electrode_Ueq(cse(cccc),cccc);
+            end
+        end
+
+        function Dsn = update_neg_electrode_diffusivity (obj,cccc,cs) 
+            global ini
+            global param_functions
+
+            Dsn = param_functions.neg_electrode_diffusivity(cs(cccc));
+        end
+
+        function Dsp = update_pos_electrode_diffusivity (obj,cccc,cs) 
+            global sol
+            global ini
+            global param_functions
+
+            Dsp = param_functions.pos_electrode_diffusivity(cs(cccc+sol.nb_cell_n));
         end
 
         function De = update_elec_diff_singlecell (obj,cccc,ce) 
@@ -1150,11 +1160,12 @@ classdef equation_building_functions
             global param_functions
 
             A_s=p.A_s_n;
-            Ds= p.Dsn;
             if i>sol.nb_cell_n
                 A_s=p.A_s_p;
-                Ds= p.Dsp;
             end
+
+
+            
 
             if ID=="ps"
                 source=-p.Faraday*A_s*j(i);
@@ -1163,6 +1174,10 @@ classdef equation_building_functions
             elseif ID=="ce"
                 source= (1-p.t_plus)*A_s*j(i);
             elseif ID=="cs"
+                Ds= p.Dsn(min(i,sol.nb_cell_n));
+                if i>sol.nb_cell_n
+                    Ds= p.Dsp(i-sol.nb_cell_n-sol.nb_cell_s);
+                end
                 source= -j(i)/Ds;
             else
                 disp("ERROR update_source_single_cell : ID string is incorrect.")

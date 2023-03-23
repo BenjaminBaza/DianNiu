@@ -77,11 +77,6 @@ fv.csp=csp_next;
 fv.cse=cat(2,fv.csn(length(sol.part_coord_n),:),fv.csp(length(sol.part_coord_p),:));
 
 
-if deb.videos_generation==1
-    vis_fun.animate_data('csn.avi',sol.part_coord_n,csn_next_save,3,'r','c_sn','Li concentration in solid particle');
-    vis_fun.animate_data('csp.avi',sol.part_coord_p,csp_next_save,3,'r','c_sp','Li concentration in solid particle');
-end
-
 
 
 clear outcome_anim csn_next csp_next csn_next_save csp_next_save j_temp ;
