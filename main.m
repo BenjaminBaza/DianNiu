@@ -27,7 +27,6 @@ function main()
     global BV_fun
     BV_fun =        BV_functions;
 
-    %disp(vis_fun.logarithmic_ticks_generator(0.000002,100000))
 
     %%%%%%%%%%%%%%%%% Start timer
     main_timer=tic;
@@ -36,7 +35,6 @@ function main()
     read_timer=tic;
 
     run read_ctrl_development()
-    %run read_ctrl_template
 
     global deb
     global hist
@@ -45,10 +43,6 @@ function main()
     global sol
 
     read_chrono=toc(read_timer);
-
-    %for part_discretization_nb = 1:1:length(sol.part_nb_cell_array)
-    %    sol.part_nb_cell= 19;%20;
-    %    particle_mesh_generator(2)
 
     %%%%%%%%%%%%%%%%% Run solver
     solver_timer=tic;

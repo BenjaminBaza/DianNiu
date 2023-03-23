@@ -9,8 +9,19 @@ classdef param_functions_LGM50
 
         function De = electrolyte_diffusivity(obj,c)
             x=c*0.001;
-            %De = (8.794*10^(-7)*x^2 - 3.972*10^(-6)*x + 4.862*10^(-6)) ;
             De = (8.794*10^(-11)*x^2 - 3.972*10^(-10)*x + 4.862*10^(-10)) ;
+        end
+
+        function Dcs = neg_electrode_diffusivity(obj,c)
+            global p
+            x=c/p.csn_max;
+            Dcs = 3.3e-14 ;
+        end
+
+        function Dcs = pos_electrode_diffusivity(obj,c)
+            global p
+            x=c/p.csp_max;
+            Dcs = 4.0e-15 ;
         end
 
         function Ueqn = neg_electrode_Ueq(obj,c,i)
