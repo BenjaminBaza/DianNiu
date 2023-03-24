@@ -45,10 +45,11 @@ classdef equation_building_functions
 
         function f = LHS_f_cs_single_cell (obj,c,D,r,source,i,i_rcell,print_info)
             global BC_fun
-            [rm,rc,rp,cm,cc,cp]=BC_fun.concentration_solid_BC(c,r,i,source,D,i_rcell);
+            [rm,rc,rp,cm,cc,cp,Dm,Dc,Dp]=BC_fun.concentration_solid_BC(c,r,i,source,D,i_rcell);
                     
-            factor_plus = D * ((rp+rc)/2)^2 /(rp-rc);
-            factor_minus= D * ((rc+rm)/2)^2 /(rc-rm);
+            factor_plus = ((Dp+Dc)/2) * ((rp+rc)/2)^2 /(rp-rc);
+            factor_minus= ((Dc+Dm)/2) * ((rc+rm)/2)^2 /(rc-rm);
+
             f= cp*factor_plus + cm*factor_minus - cc*(factor_plus+factor_minus);  
             if print_info ==1
                 disp("DEBUG BEN LHS_f_cs_single_cell "+num2str(cp)+"  "+num2str(factor_plus)+"  "+num2str(cp*factor_plus)+"  "+num2str(cm*factor_minus)+"  "+num2str(cc*(factor_plus+factor_minus))+"  "+num2str(f))
@@ -1088,7 +1089,7 @@ classdef equation_building_functions
         end
 
 
-        function [De,kappa_eff, kappa_D_eff] = update_param_functions (obj,ce,cse) 
+        function [De,kappa_eff, kappa_D_eff] = update_param_functions (obj,ce,cse,csn,csp) 
             global p
             global sol
             global fv
@@ -1099,30 +1100,51 @@ classdef equation_building_functions
             kappa_eff=zeros(sol.nb_cell,1);
             fv.Ueq=0*fv.Ueq;
 
-            if p.De_function_mode==1
+            if p.De_constant==0
                 for cccc = 1:1:length(ce)
                     De(cccc) = obj.update_elec_diff_singlecell (cccc,ce);
-                    %De(cccc) = param_functions.electrolyte_diffusivity(ce(cccc))*p.De_eff_coeff(cccc);
                 end
             end
 
-            if p.kappa_function_mode==1
+            if p.kappa_constant==0
                 for cccc = 1:1:length(ce)
                     [kappa_eff(cccc), kappa_D_eff(cccc)]=obj.update_kappa_singlecell(cccc,ce);
-
-                    %kappa_eff(cccc) = param_functions.electrolyte_conductivity(ce(cccc))*p.De_eff_coeff(cccc);
-                    %kappa_D_eff(cccc) = kappa_eff(cccc)*2* p.Rg * ini.T0/p.Faraday * (p.t_plus-1);
                 end 
             end
 
-            if p.kappa_function_mode==1
-                for cccc = 1:1:sol.nb_cell_n
-                    fv.Ueq(cccc) = param_functions.neg_electrode_Ueq(cse(cccc),cccc);
+            for cccc = 1:1:sol.nb_cell_n
+                fv.Ueq(cccc) = param_functions.neg_electrode_Ueq(cse(cccc),cccc);
+            end
+            for cccc = sol.nb_cell_n+1:1:sol.nb_cell_n+sol.nb_cell_p
+                fv.Ueq(cccc+sol.nb_cell_s) = param_functions.pos_electrode_Ueq(cse(cccc),cccc);
+            end
+
+            if p.Ds_constant==0
+                for cccc = 1:1:sol.nb_cell_n*(sol.part_nb_cell+1)
+                    p.Dsn_array(cccc) = obj.update_neg_electrode_diffusivity (cccc,csn);
                 end
-                for cccc = sol.nb_cell_n+1:1:sol.nb_cell_n+sol.nb_cell_p
-                    fv.Ueq(cccc+sol.nb_cell_s) = param_functions.pos_electrode_Ueq(cse(cccc),cccc);
+                
+                for cccc = 1:1:sol.nb_cell_p*(sol.part_nb_cell+1)
+                    p.Dsp_array(cccc) = obj.update_pos_electrode_diffusivity (cccc,csp);
                 end
             end
+
+
+        end
+
+        function Dsn = update_neg_electrode_diffusivity (obj,cccc,cs) 
+            global ini
+            global param_functions
+
+            Dsn = param_functions.neg_electrode_diffusivity(cs(cccc));
+        end
+
+        function Dsp = update_pos_electrode_diffusivity (obj,cccc,cs) 
+            global sol
+            global ini
+            global param_functions
+
+            Dsp = param_functions.pos_electrode_diffusivity(cs(cccc));
         end
 
         function De = update_elec_diff_singlecell (obj,cccc,ce) 
@@ -1149,23 +1171,29 @@ classdef equation_building_functions
             global ini
             global param_functions
 
-            A_s=p.A_s_n;
-            Ds= p.Dsn;
-            if i>sol.nb_cell_n
-                A_s=p.A_s_p;
-                Ds= p.Dsp;
-            end
-
-            if ID=="ps"
-                source=-p.Faraday*A_s*j(i);
-            elseif ID=="pe"
-                source= p.Faraday*A_s*j(i);
-            elseif ID=="ce"
-                source= (1-p.t_plus)*A_s*j(i);
-            elseif ID=="cs"
+            if ID=="cs"
+                Ds=0;
+                if i>sol.nb_cell_n
+                    %Ds= p.Dsp;
+                    Ds=p.Dsp_array(i-sol.nb_cell_n-sol.nb_cell_s);    
+                else
+                    %Ds= p.Dsn;
+                    Ds=p.Dsn_array(i);    
+                end
                 source= -j(i)/Ds;
             else
-                disp("ERROR update_source_single_cell : ID string is incorrect.")
+                A_s=p.A_s_n;
+                if i>sol.nb_cell_n
+                    A_s=p.A_s_p;
+                end
+
+                if ID=="ps"
+                    source=-p.Faraday*A_s*j(i);
+                elseif ID=="pe"
+                    source= p.Faraday*A_s*j(i);
+                elseif ID=="ce"
+                    source= (1-p.t_plus)*A_s*j(i);
+                end
             end
         end
 

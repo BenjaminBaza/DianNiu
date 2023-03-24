@@ -54,21 +54,17 @@ classdef newton_solver_functions
             
             if deb.prints<=0
                 hist.residuals   = zeros(6,sol.newton_meth_max_ite);
-                %disp(sol.nb_cell_n*sol.part_nb_cell)
-                %disp(size_csn)
-                %disp(ce)
-                %disp(csn)
-                %disp(resized_csn)
             end
 
             %Update parameter functions 
             
-            [p.De_eff,kappa,p.kappa_D_eff] = eq_build_fun.update_param_functions(ce,cse);
+            [p.De_eff,kappa,p.kappa_D_eff] = eq_build_fun.update_param_functions(ce,cse,resized_csn,resized_csp);
             
 
             %calculate initial right hand side vectors (necessary for eqution with a time derivative (ie. for cs and ce))
-            f_csn= eq_build_fun.LHS_f_cs(resized_csn,Dsn,rn,source_csn);
-            f_csp= eq_build_fun.LHS_f_cs(resized_csp,Dsp,rp,source_csp);
+            f_csn= eq_build_fun.LHS_f_cs(resized_csn,p.Dsn_array,rn,source_csn);
+            %f_csn_copy= eq_build_fun.LHS_f_cs(resized_csn,Dsn,rn,source_csn);
+            f_csp= eq_build_fun.LHS_f_cs(resized_csp,p.Dsp_array,rp,source_csp);
             f_ce = eq_build_fun.LHS_f_ce(ce,p.De_eff,dx,source_ce,"f_ce");
             f_ps = eq_build_fun.LHS_f_ps(fv.ps,ce,sigma,dx,source_ps,separator_index,current_source_psBC,"f_ps",0);
             f_pe = eq_build_fun.LHS_f_pe(fv.pe,ce,kappa,p.kappa_D_eff,dx,source_pe,"f_pe");
@@ -102,7 +98,7 @@ classdef newton_solver_functions
 
                 %Update parameter functions and Butler-Volmer equation
                 
-                [p.De_eff,kappa,p.kappa_D_eff] = eq_build_fun.update_param_functions(ce_next,cse_next);
+                [p.De_eff,kappa,p.kappa_D_eff] = eq_build_fun.update_param_functions(ce_next,cse_next,resized_csn_next,resized_csp_next);
                 fv.j=BV_fun.butler_volmer_equation(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,"newton_solver_functions next ite");
                 [source_pe,source_ps,source_ce,source_csn,source_csp] = eq_build_fun.update_sources();
                 
@@ -111,78 +107,74 @@ classdef newton_solver_functions
                 Calc_Jac_timer=tic;
 
                 %%Calculate the jacobian matrix of the left hand side vector for the concentration at time t+dt: Jf(c)
-                %if method=2, jacobian is calculated analytically, if method=1, jac
-                %is calculated using finite differences.
-                if Jac_method==1
-                    
-                    Calc_Jacdiag_timer=tic;
-                    if deb.timing_jacobian==1
-                        Calc_Jaccedce_timer=tic;
-                    end            
+                % The jacobian is calculated using finite differences.
+                
+                Calc_Jacdiag_timer=tic;
+                if deb.timing_jacobian==1
+                    Calc_Jaccedce_timer=tic;
+                end            
     
-                    Jac_f_ce_next = eq_build_fun.LHS_Jac_f_Fdiff_ce(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,p.De_eff,dx,source_ce,1);
+                Jac_f_ce_next = eq_build_fun.LHS_Jac_f_Fdiff_ce(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,p.De_eff,dx,source_ce,1);
 
-                    if deb.timing_jacobian==1
-                        deb.chrono_Jaccedce_singleite = deb.chrono_Jaccedce_singleite + toc(Calc_Jaccedce_timer);
-                        Calc_Jacpedpe_timer=tic;
-                    end
+                if deb.timing_jacobian==1
+                    deb.chrono_Jaccedce_singleite = deb.chrono_Jaccedce_singleite + toc(Calc_Jaccedce_timer);
+                    Calc_Jacpedpe_timer=tic;
+                end
 
-                    Jac_f_pe_next = eq_build_fun.LHS_Jac_f_Fdiff_pe(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,kappa,p.kappa_D_eff,dx,source_pe);
+                Jac_f_pe_next = eq_build_fun.LHS_Jac_f_Fdiff_pe(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,kappa,p.kappa_D_eff,dx,source_pe);
 
-                    if deb.timing_jacobian==1
-                        deb.chrono_Jacpedpe_singleite = deb.chrono_Jacpedpe_singleite + toc(Calc_Jacpedpe_timer);
-                        Calc_Jacpsdps_timer=tic;
-                    end
+                if deb.timing_jacobian==1
+                    deb.chrono_Jacpedpe_singleite = deb.chrono_Jacpedpe_singleite + toc(Calc_Jacpedpe_timer);
+                    Calc_Jacpsdps_timer=tic;
+                end
 
-                    Jac_f_ps_next = eq_build_fun.LHS_Jac_f_Fdiff_ps(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,sigma,dx,source_ps,separator_index,current_source_psBC);
+                Jac_f_ps_next = eq_build_fun.LHS_Jac_f_Fdiff_ps(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,sigma,dx,source_ps,separator_index,current_source_psBC);
 
-                    if deb.timing_jacobian==1
-                        deb.chrono_Jacpsdps_singleite = deb.chrono_Jacpsdps_singleite + toc(Calc_Jacpsdps_timer);
-                        Calc_Jaccsdcs_timer=tic;
-                    end
+                if deb.timing_jacobian==1
+                    deb.chrono_Jacpsdps_singleite = deb.chrono_Jacpsdps_singleite + toc(Calc_Jacpsdps_timer);
+                    Calc_Jaccsdcs_timer=tic;
+                end
 
-                    Jac_f_csn_next= eq_build_fun.LHS_Jac_f_Fdiff_cs(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,resized_csn_next,Dsn,rn,source_csn,"csn",1);
-                    Jac_f_csp_next= eq_build_fun.LHS_Jac_f_Fdiff_cs(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,resized_csp_next,Dsp,rp,source_csp,"csp",1);
+                Jac_f_csn_next= eq_build_fun.LHS_Jac_f_Fdiff_cs(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,resized_csn_next,p.Dsn_array,rn,source_csn,"csn",1);
+                Jac_f_csp_next= eq_build_fun.LHS_Jac_f_Fdiff_cs(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,resized_csp_next,p.Dsp_array,rp,source_csp,"csp",1);
 
-                    if deb.timing_jacobian==1
-                        deb.chrono_Jaccsdcs_singleite = deb.chrono_Jaccsdcs_singleite + toc(Calc_Jaccsdcs_timer);
-                    end
-                    deb.chrono_Jacdiag_singleite = deb.chrono_Jacdiag_singleite + toc(Calc_Jacdiag_timer);
+                if deb.timing_jacobian==1
+                    deb.chrono_Jaccsdcs_singleite = deb.chrono_Jaccsdcs_singleite + toc(Calc_Jaccsdcs_timer);
+                end
+                deb.chrono_Jacdiag_singleite = deb.chrono_Jacdiag_singleite + toc(Calc_Jacdiag_timer);
 
-                    Calc_Jacce_timer=tic;
-                    Jac_f_ce_dpe_next = eq_build_fun.LHS_Jac_f_Fdiff_cedpe(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,p.De_eff,dx,source_ce);
-                    Jac_f_ce_dps_next = eq_build_fun.LHS_Jac_f_Fdiff_cedps(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,p.De_eff,dx,source_ce);
-                    Jac_f_ce_dcs_next = eq_build_fun.LHS_Jac_f_Fdiff_cedcs(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,p.De_eff,dx,source_ce,1);
-                    deb.chrono_Jacce_singleite = deb.chrono_Jacce_singleite + toc(Calc_Jacce_timer);
+                Calc_Jacce_timer=tic;
+                Jac_f_ce_dpe_next = eq_build_fun.LHS_Jac_f_Fdiff_cedpe(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,p.De_eff,dx,source_ce);
+                Jac_f_ce_dps_next = eq_build_fun.LHS_Jac_f_Fdiff_cedps(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,p.De_eff,dx,source_ce);
+                Jac_f_ce_dcs_next = eq_build_fun.LHS_Jac_f_Fdiff_cedcs(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,p.De_eff,dx,source_ce,1);
+                deb.chrono_Jacce_singleite = deb.chrono_Jacce_singleite + toc(Calc_Jacce_timer);
 
-                    Calc_Jacpe_timer=tic;
-                    Jac_f_pe_dce_next = eq_build_fun.LHS_Jac_f_Fdiff_pedce(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,kappa,p.kappa_D_eff,dx,source_pe,1);
-                    Jac_f_pe_dps_next = eq_build_fun.LHS_Jac_f_Fdiff_pedps(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,kappa,p.kappa_D_eff,dx,source_pe);
-                    Jac_f_pe_dcs_next = eq_build_fun.LHS_Jac_f_Fdiff_pedcs(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,kappa,p.kappa_D_eff,dx,source_pe,1);
-                    deb.chrono_Jacpe_singleite = deb.chrono_Jacpe_singleite + toc(Calc_Jacpe_timer);
+                Calc_Jacpe_timer=tic;
+                Jac_f_pe_dce_next = eq_build_fun.LHS_Jac_f_Fdiff_pedce(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,kappa,p.kappa_D_eff,dx,source_pe,1);
+                Jac_f_pe_dps_next = eq_build_fun.LHS_Jac_f_Fdiff_pedps(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,kappa,p.kappa_D_eff,dx,source_pe);
+                Jac_f_pe_dcs_next = eq_build_fun.LHS_Jac_f_Fdiff_pedcs(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,kappa,p.kappa_D_eff,dx,source_pe,1);
+                deb.chrono_Jacpe_singleite = deb.chrono_Jacpe_singleite + toc(Calc_Jacpe_timer);
 
-                    Calc_Jacps_timer=tic;
-                    Jac_f_ps_dce_next = eq_build_fun.LHS_Jac_f_Fdiff_psdce(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,sigma,dx,source_ps,separator_index,current_source_psBC);
-                    Jac_f_ps_dpe_next = eq_build_fun.LHS_Jac_f_Fdiff_psdpe(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,sigma,dx,source_ps,separator_index,current_source_psBC);
-                    Jac_f_ps_dcs_next = eq_build_fun.LHS_Jac_f_Fdiff_psdcs(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,sigma,dx,source_ps,separator_index,current_source_psBC,1);
-                    deb.chrono_Jacps_singleite = deb.chrono_Jacps_singleite + toc(Calc_Jacps_timer);
+                Calc_Jacps_timer=tic;
+                Jac_f_ps_dce_next = eq_build_fun.LHS_Jac_f_Fdiff_psdce(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,sigma,dx,source_ps,separator_index,current_source_psBC);
+                Jac_f_ps_dpe_next = eq_build_fun.LHS_Jac_f_Fdiff_psdpe(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,sigma,dx,source_ps,separator_index,current_source_psBC);
+                Jac_f_ps_dcs_next = eq_build_fun.LHS_Jac_f_Fdiff_psdcs(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,sigma,dx,source_ps,separator_index,current_source_psBC,1);
+                deb.chrono_Jacps_singleite = deb.chrono_Jacps_singleite + toc(Calc_Jacps_timer);
 
-                    Calc_Jaccsn_timer=tic;
-                    Jac_f_csn_dce_next = eq_build_fun.LHS_Jac_f_Fdiff_csdce(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,resized_csn_next,Dsn,rn,source_csn,"csn");
-                    Jac_f_csn_dpe_next = eq_build_fun.LHS_Jac_f_Fdiff_csdpe(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,resized_csn_next,Dsn,rn,source_csn,"csn");
-                    Jac_f_csn_dps_next = eq_build_fun.LHS_Jac_f_Fdiff_csdps(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,resized_csn_next,Dsn,rn,source_csn,"csn");
-                    deb.chrono_Jaccsn_singleite = deb.chrono_Jaccsn_singleite + toc(Calc_Jaccsn_timer);
+                Calc_Jaccsn_timer=tic;
+                Jac_f_csn_dce_next = eq_build_fun.LHS_Jac_f_Fdiff_csdce(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,resized_csn_next,p.Dsn_array,rn,source_csn,"csn");
+                Jac_f_csn_dpe_next = eq_build_fun.LHS_Jac_f_Fdiff_csdpe(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,resized_csn_next,p.Dsn_array,rn,source_csn,"csn");
+                Jac_f_csn_dps_next = eq_build_fun.LHS_Jac_f_Fdiff_csdps(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,resized_csn_next,p.Dsn_array,rn,source_csn,"csn");
+                deb.chrono_Jaccsn_singleite = deb.chrono_Jaccsn_singleite + toc(Calc_Jaccsn_timer);
 
-                    Calc_Jaccsp_timer=tic;
-                    Jac_f_csp_dce_next = eq_build_fun.LHS_Jac_f_Fdiff_csdce(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,resized_csp_next,Dsp,rp,source_csp,"csp");
-                    Jac_f_csp_dpe_next = eq_build_fun.LHS_Jac_f_Fdiff_csdpe(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,resized_csp_next,Dsp,rp,source_csp,"csp");
-                    Jac_f_csp_dps_next = eq_build_fun.LHS_Jac_f_Fdiff_csdps(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,resized_csp_next,Dsp,rp,source_csp,"csp");
-                    deb.chrono_Jaccsp_singleite = deb.chrono_Jaccsp_singleite + toc(Calc_Jaccsp_timer);
+                Calc_Jaccsp_timer=tic;
+                Jac_f_csp_dce_next = eq_build_fun.LHS_Jac_f_Fdiff_csdce(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,resized_csp_next,p.Dsp_array,rp,source_csp,"csp");
+                Jac_f_csp_dpe_next = eq_build_fun.LHS_Jac_f_Fdiff_csdpe(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,resized_csp_next,p.Dsp_array,rp,source_csp,"csp");
+                Jac_f_csp_dps_next = eq_build_fun.LHS_Jac_f_Fdiff_csdps(pe_next,ps_next,ce_next,cse_next,ini.T0,fv.Ueq,resized_csp_next,p.Dsp_array,rp,source_csp,"csp");
+                deb.chrono_Jaccsp_singleite = deb.chrono_Jaccsp_singleite + toc(Calc_Jaccsp_timer);
 
 
                     
-
-                end
 
                 deb.chrono_Calc_Jac_singleite = deb.chrono_Calc_Jac_singleite + toc(Calc_Jac_timer);
                 Calc_f_timer=tic;
@@ -190,8 +182,8 @@ classdef newton_solver_functions
                 f_ce_next       = eq_build_fun.LHS_f_ce(ce_next,p.De_eff,dx,source_ce,"f_ce_next");
                 f_pe_next       = eq_build_fun.LHS_f_pe(pe_next,ce_next,kappa,p.kappa_D_eff,dx,source_pe,"f_pe_next");
                 f_ps_next       = eq_build_fun.LHS_f_ps(ps_next,ce_next,sigma,dx,source_ps,separator_index,current_source_psBC,"f_ps_next",0);
-                f_csn_next      = eq_build_fun.LHS_f_cs(resized_csn_next,Dsn,rn,source_csn);
-                f_csp_next      = eq_build_fun.LHS_f_cs(resized_csp_next,Dsp,rp,source_csp);
+                f_csn_next      = eq_build_fun.LHS_f_cs(resized_csn_next,p.Dsn_array,rn,source_csn);
+                f_csp_next      = eq_build_fun.LHS_f_cs(resized_csp_next,p.Dsp_array,rp,source_csp);
                 
                 deb.chrono_Calc_f_singleite = deb.chrono_Calc_f_singleite + toc(Calc_f_timer);
                 Calc_gJacg_timer=tic;
@@ -296,6 +288,7 @@ classdef newton_solver_functions
                 deb.chrono_newtsol_setup_singleite = deb.chrono_newtsol_setup_singleite + toc(newt_solv_setup_timer);
 
 
+
                 % Solve the system
 
                 mat_inv_timer=tic;
@@ -321,6 +314,7 @@ classdef newton_solver_functions
                 end
 
                 deb.chrono_matrix_inversion_singleite = deb.chrono_matrix_inversion_singleite + toc(mat_inv_timer);
+
 
 
                 % Update solutions, record history data and measure resudual

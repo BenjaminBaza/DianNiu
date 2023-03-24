@@ -60,7 +60,10 @@ function DFN_equations_coupled_solver()
     while solver_converged==0
         solver_attempts = solver_attempts + 1;
 
-        [p.De_eff,p.kappa,p.kappa_D_eff] = eq_build_fun.update_param_functions(fv.ce,fv.cse);
+        csn_reshaped=reshape(fv.csn,sol.nb_cell_n*(sol.part_nb_cell+1),1);
+        csp_reshaped=reshape(fv.csp,sol.nb_cell_p*(sol.part_nb_cell+1),1);
+
+        [p.De_eff,p.kappa,p.kappa_D_eff] = eq_build_fun.update_param_functions(fv.ce,fv.cse,csn_reshaped,csp_reshaped);
 
         %% Build sources from values of the last iteration
         current_source_n=-ex.I_array(sol.time_ite)/(p.coll_A_n*p.sig_eff_n);

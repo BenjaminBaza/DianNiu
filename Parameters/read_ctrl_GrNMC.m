@@ -22,8 +22,6 @@ function read_ctrl_GrNMC()
     p.Ltot = p.Ln+p.Ls+p.Lp; % total cell thickness
     p.R_s_n = 13.7e-6;   % negative electrode particle radius [m]
     p.R_s_p = 6.5e-6;   % positive electrode particle radius [m]
-    p.L_ccn = 0;    % negative current collector thickness [m]
-    p.L_ccp = 0;    % positive current collector thickness [m]
 
     % Volume fractions
     p.eps_e_n = 0.329;   % negative electrode volume fraction of electrolyte 
@@ -31,8 +29,6 @@ function read_ctrl_GrNMC()
     p.eps_e_p = 0.296;   % negative electrode volume fraction of electrolyte 
     p.eps_s_n = 1-p.eps_e_n ;      % negative electrode volume fraction
     p.eps_s_p = 1-p.eps_e_p ;      % positive electrode volume fraction
-    p.eps_f_n = 0.;  % negative electrode volume fraction of filler
-    p.eps_f_p = 0.;  % negative electrode volume fraction of filler
 
 
     % Specific interfacial surface area
@@ -46,7 +42,6 @@ function read_ctrl_GrNMC()
     %% Solver settings
     global sol
 
-    sol.coupling_scheme=1;
     sol.newt_ite = 0;
     sol.time_ite = 0;
 
@@ -63,9 +58,9 @@ function read_ctrl_GrNMC()
     sol.min_allowed_voltage = 2.5 ; %[V] (Not used in the solver at the moment)
     sol.max_allowed_voltage_time_differential = 2.;
 
-    sol.nb_cell_n   = 80;%30;%50;
-    sol.nb_cell_s   = 20;%20;%50;
-    sol.nb_cell_p   = 80;%30;%50;
+    sol.nb_cell_n   = 40;%30;%50;
+    sol.nb_cell_s   = 15;%20;%50;
+    sol.nb_cell_p   = 40;%30;%50;
     sol.nb_cell     = sol.nb_cell_n + sol.nb_cell_s + sol.nb_cell_p ;   %
     sol.nb_cell_ps  = sol.nb_cell_n + sol.nb_cell_p ;   %
 
@@ -91,10 +86,9 @@ function read_ctrl_GrNMC()
     sol.cell_center_coord_solid  = cat(1,sol.cell_center_coord(1:sol.nb_cell_n),sol.cell_center_coord(sol.nb_cell_n+sol.nb_cell_s+1:sol.nb_cell_n+sol.nb_cell_s+sol.nb_cell_p));
 
 
-    sol.part_nb_cell= 39;
+    sol.part_nb_cell= 39;%20;
     sol.particle_mesh_distribution_order= 2.0;
-    sol.adjusted_position_a = zeros(1,sol.part_nb_cell+1);
-    particle_mesh_generator(2)
+    particle_mesh_generator(sol.particle_mesh_distribution_order)
 
     sol.newton_meth_res_threshold=1e-6	;
     sol.newton_meth_max_ite=39;

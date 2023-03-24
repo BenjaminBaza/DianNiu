@@ -171,9 +171,12 @@ function read_ctrl_development()
 
 
     % Solid phase diffusion coefficients
-    p.Dsn = 3.3e-14;  %3.3e-14; %3.9e-14;  % neg. electrode diffusion coeff [m^2/s]
-    p.Dsp = 4.0e-15; %1e-13;  % pos. electrode diffusion coeff [m^2/s]
+    p.Dsn = 3.3e-14;  % neg. electrode diffusion coeff [m^2/s]
+    p.Dsp = 4.0e-15;  % pos. electrode diffusion coeff [m^2/s]
+    p.Dsn_array = zeros(sol.nb_cell_n*(sol.part_nb_cell+1),1);  % neg. electrode diffusion coeff [m^2/s]
+    p.Dsp_array = zeros(sol.nb_cell_n*(sol.part_nb_cell+1),1);  % pos. electrode diffusion coeff [m^2/s]
 
+    p.Ds_constant=1;
 
     % Electrolyte diffusion coefficient
     p.De_eff  = cat(1,ones(sol.nb_cell_n,1),ones(sol.nb_cell_s,1));
@@ -181,6 +184,8 @@ function read_ctrl_development()
 
     p.De_eff_coeff = cat(1,p.eps_e_n^p.brug*ones(sol.nb_cell_n,1),p.eps_e_s^p.brug*ones(sol.nb_cell_s,1));
     p.De_eff_coeff  = cat(1,p.De_eff_coeff,p.eps_e_p^p.brug*ones(sol.nb_cell_p,1));
+
+    p.De_constant=0;
 
     % Solid phase conductivity
     p.sig_n = 215.;    % Conductivity of solid in neg. electrode, [1/Ohm*m]=[S*m] (S=Siemens)
@@ -213,6 +218,8 @@ function read_ctrl_development()
     p.kappa_eff  = cat(1,ones(sol.nb_cell_n,1),ones(sol.nb_cell_s,1));
     p.kappa_eff  = cat(1,p.kappa_eff,ones(sol.nb_cell_p,1));
     p.kappa_D_eff= p.kappa_eff;
+
+    p.kappa_constant=0;
 
     %% Field variables allocation
 
@@ -286,7 +293,8 @@ function read_ctrl_development()
    	p.kappa_eff = param_functions.electrolyte_conductivity(ini.ce0) *ones(sol.nb_cell,1);
    	p.kappa_D_eff = p.kappa_eff *2* p.Rg * ini.T0/p.Faraday * (p.t_plus-1);
 
-
+    p.Dsn_array = param_functions.neg_electrode_diffusivity(ini.csn0) *ones(sol.nb_cell_n*(sol.part_nb_cell+1),1);
+    p.Dsp_array = param_functions.pos_electrode_diffusivity(ini.csp0) *ones(sol.nb_cell_p*(sol.part_nb_cell+1),1);
 
     %% Field variables history tables allocation
 

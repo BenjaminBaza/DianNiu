@@ -1,20 +1,35 @@
 classdef boundary_condition_functions
     methods
 
-        function [rm,rc,rp,cm,cc,cp]= concentration_solid_BC(obj,c,r,i,source,D,i_rcell)
+        function [rm,rc,rp,cm,cc,cp,Dm,Dc,Dp]= concentration_solid_BC(obj,c,r,i,source,D,i_rcell)
             len=length(c);
             lenr=length(r);
             if i_rcell==lenr
                 rm=r(i_rcell-1);    rc=r(i_rcell);  rp=r(lenr)+ r(lenr) -r(lenr-1);
                 cm=c(i-1);          cc=c(i);        cp=cc + source*(r(lenr)-r(lenr-1));
-                %disp("DEBUG BEN solid BC "+num2str(cc)+"  "+num2str(cp)+"  "+num2str(source)+"  "+num2str(r(lenr)-r(lenr-1))+"  "+num2str(source*(r(lenr)-r(lenr-1))))
+                if length(D)>1
+                    Dm=D(i-1);          Dc=D(i);        Dp=D(i);
+                else
+                    Dm=D;          Dc=D;        Dp=D;
+                end
             elseif i_rcell==1
                 rm=-r(i_rcell+1);   rc=r(i_rcell);  rp=r(i_rcell+1);
                 cm=c(i+1);          cc=c(i);        cp=c(i+1);
                 %cm=c(i);          cc=c(i);        cp=c(i+1);
+                if length(D)>1
+                    Dm=D(i);          Dc=D(i);        Dp=D(i+1);
+                else
+                    Dm=D;          Dc=D;        Dp=D;
+                end
             else
                 rm=r(i_rcell-1);    rc=r(i_rcell);  rp=r(i_rcell+1);
                 cm=c(i-1);          cc=c(i);        cp=c(i+1);
+                
+                if length(D)>1
+                    Dm=D(i-1);          Dc=D(i);        Dp=D(i+1);
+                else
+                    Dm=D;          Dc=D;        Dp=D;
+                end
             end
         end
 
