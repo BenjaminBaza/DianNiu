@@ -171,8 +171,6 @@ function read_ctrl_development()
 
 
     % Solid phase diffusion coefficients
-    p.Dsn = 3.3e-14;  % neg. electrode diffusion coeff [m^2/s]
-    p.Dsp = 4.0e-15;  % pos. electrode diffusion coeff [m^2/s]
     p.Dsn_array = zeros(sol.nb_cell_n*(sol.part_nb_cell+1),1);  % neg. electrode diffusion coeff [m^2/s]
     p.Dsp_array = zeros(sol.nb_cell_n*(sol.part_nb_cell+1),1);  % pos. electrode diffusion coeff [m^2/s]
 
@@ -208,10 +206,9 @@ function read_ctrl_development()
     ini.V0 = 4.0;       % Initial tension [V]
     ini.ce0 = 1000. ;%1000 ;      % Initial electrolyte concentration of Li, [mol/m^3]
     ini.SOC = 1.;
-    ini.csp0 = p.csp_stoic_min+ (p.csp_stoic_max-p.csp_stoic_min)*(1-ini.SOC) ; %3.45e4 ;  % Initial pos. electrode concentration of Li, [mol/m^3]
-    ini.csn0 = p.csn_stoic_min+ (p.csn_stoic_max-p.csn_stoic_min)*(  ini.SOC) ; %1.29e4 ;  % Initial neg. electrode concentration of Li, [mol/m^3]
+    ini.csp0 = p.csp_stoic_min+ (p.csp_stoic_max-p.csp_stoic_min)*(1-ini.SOC) ;  % Initial pos. electrode concentration of Li, [mol/m^3]
+    ini.csn0 = p.csn_stoic_min+ (p.csn_stoic_max-p.csn_stoic_min)*(  ini.SOC) ;  % Initial neg. electrode concentration of Li, [mol/m^3]
     ini.T0 = 298.15;%1e3;       % Initial temperature, [K]
-
 
 
     % Conductivity of electrolyte

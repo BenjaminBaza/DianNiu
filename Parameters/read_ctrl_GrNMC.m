@@ -49,7 +49,7 @@ function read_ctrl_GrNMC()
     sol.time_tot    = 4000.0;                    %Total time of the simulation [s]
     sol.time        = 0.0; %10800;                     %Total time of the simulation [s]
     sol.dt          = 0.    ;%1.                        %Time step for the time discretization [s]
-    sol.max_dt      = 10.    ;%1.                        %Maximum time step for the time discretization [s]
+    sol.max_dt      = 5.    ;%1.                        %Maximum time step for the time discretization [s]
     sol.quick_dt    = 0.5    ;%1.                        %Faster time step for the time discretization [s] for the modeling of the end of a charge / discharge
     sol.nb_steps    = 10000 ; %length(sol.time_array);    % Number of time states visited throughout the simulation
     sol.time_array  = zeros(1,sol.nb_steps) ; %sol.dt:sol.dt:sol.time_tot;  % array containing the time coordinate of each time step (may be redundant)
@@ -91,13 +91,9 @@ function read_ctrl_GrNMC()
     particle_mesh_generator(sol.particle_mesh_distribution_order)
 
     sol.newton_meth_res_threshold=1e-6	;
-    sol.newton_meth_max_ite=39;
-    sol.newton_update_sources= 1;
+    sol.newton_meth_max_ite=100;
     sol.newton_relax_factor = 0.8;
 
-    sol.nb_logi_cores= getenv('NUMBER_OF_PROCESSORS');
-    sol.nb_phys_cores= feature('numcores');
-    sol.nb_workers=max(1,sol.nb_phys_cores-1);
 
     %% Debug parameters
 
@@ -105,10 +101,8 @@ function read_ctrl_GrNMC()
 
     deb.prints=0;
     deb.run_name= "GrNMC";
-    deb.videos_generation=0;
     deb.plot_data=1;
     deb.animate_data=0;
-    deb.safe_BC_mode=0;
     deb.break_time_loop=0;
     deb.write_output_data=2; %1 to write final data, 2 to write all history data
 
@@ -146,26 +140,10 @@ function read_ctrl_GrNMC()
     end
     deb.case_name=deb.case_name+num2str(save_nb);
     deb.folder_name=append('../Saved_data_DFN_DianNiu/',deb.case_name);
-    deb.read_ctrl_file_name = 'Parameters/read_ctrl_development.m' ;
+    deb.read_ctrl_file_name = 'Parameters/read_ctrl_GrNMC.m' ;
     deb.graph_folder_name=deb.folder_name+'/Graphs/';
 
     %% Material characteristics
-
-    % Mass densities [kg/m^3]
-    p.rho_sn = 0;  %NOT USED  % negative electrode solid phase density  
-    p.rho_sp = 0;  %NOT USED  % positive electrode solid phase density 
-    p.rho_e =  0;  %NOT USED  % Electrolyte density
-    p.rho_f = 0;   %NOT USED  % Filler density
-    p.rho_ccn = 0; %NOT USED  % negative electrode current collector density
-    p.rho_ccp = 0; %NOT USED  % positive electrode current collector density
-
-    % Masses [kg/m^2]
-    p.Mn = 		p.Ln * (p.rho_e*p.eps_e_n + p.rho_sn*p.eps_s_n + p.rho_f*p.eps_f_n);
-    p.Ms = 		p.Ls * (p.rho_e*p.eps_e_n);
-    p.Mp = 		p.Lp * (p.rho_e*p.eps_e_p + p.rho_sp*p.eps_s_p + p.rho_f*p.eps_f_p);
-    p.Mcc = 	p.rho_ccn*p.L_ccn + p.rho_ccp*p.L_ccp;
-    p.Mtot = 	p.Mn + p.Ms + p.Mp + p.Mcc;
-
 
     % Constants
     p.k0 = 1e-10 * [2.3330,0.5900] ;	% Effective reaction rates (in the negative electrode first and in the positive second) [mol^−1/2 .m^5/2 .s−1]
@@ -193,22 +171,19 @@ function read_ctrl_GrNMC()
 
 
     % Solid phase diffusion coefficients
-    p.Dsn = 3.3e-14;  %3.3e-14; %3.9e-14;  % neg. electrode diffusion coeff [m^2/s]
-    p.Dsp = 4.0e-15; %1e-13;  % pos. electrode diffusion coeff [m^2/s]
+    p.Dsn_array = zeros(sol.nb_cell_n*(sol.part_nb_cell+1),1);  % neg. electrode diffusion coeff [m^2/s]
+    p.Dsp_array = zeros(sol.nb_cell_n*(sol.part_nb_cell+1),1);  % pos. electrode diffusion coeff [m^2/s]
 
+    p.Ds_constant=0;
 
     % Electrolyte diffusion coefficient
-    p.activation_energy_electrolyte =17100.0; % Activation energy for conductivity/diffusivity in electrolyte, [J·mol-1]
-    p.De_function_mode=1; %The diffusivity of the electrolyte is handled as a function 1 or as a constant 0
-    p.De = 1 ;%2.7877e-10;    % Diffusion coeff for electrolyte, [m^2/s]
-    p.De_eff_n = p.De * p.eps_e_n^p.brug;    % Effective diffusion coeff for the electrolyte in the neg. electrode, [m^2/s]
-    p.De_eff_s = p.De * p.eps_e_s^p.brug;    % Effective diffusion coeff for the electrolyte in the separator electrode, [m^2/s]
-    p.De_eff_p = p.De * p.eps_e_p^p.brug;    % Effective diffusion coeff for the electrolyte in the pos. electrode, [m^2/s]
-    p.De_eff  = cat(1,p.De_eff_n*ones(sol.nb_cell_n,1),p.De_eff_s*ones(sol.nb_cell_s,1));
-    p.De_eff  = cat(1,p.De_eff,p.De_eff_p*ones(sol.nb_cell_p,1));
+    p.De_eff  = cat(1,ones(sol.nb_cell_n,1),ones(sol.nb_cell_s,1));
+    p.De_eff  = cat(1,p.De_eff,ones(sol.nb_cell_p,1));
 
     p.De_eff_coeff = cat(1,p.eps_e_n^p.brug*ones(sol.nb_cell_n,1),p.eps_e_s^p.brug*ones(sol.nb_cell_s,1));
     p.De_eff_coeff  = cat(1,p.De_eff_coeff,p.eps_e_p^p.brug*ones(sol.nb_cell_p,1));
+
+    p.De_constant=0;
 
     % Solid phase conductivity
     p.sig_n = 14.000;    % Conductivity of solid in neg. electrode, [1/Ohm*m]=[S*m] (S=Siemens)
@@ -222,34 +197,26 @@ function read_ctrl_GrNMC()
 
     %% External input
     global ex
-    ex.temporary_Crate = 100000 ; 
-    ex.I_array  = 0.15625 * ones(size(sol.time_array)) ; %0.5 * ones(size(sol.time_array));%ex.temporary_Crate*ones(size(sol.time_array));  % Array containing the input current intensity at each time step (may be redundant)
+    ex.I_array  = 0.15625 * ones(size(sol.time_array)) ; %0.15625 * ones(size(sol.time_array));%ex.temporary_Crate*ones(size(sol.time_array));  % Array containing the input current intensity at each time step (may be redundant)
     % 1C=5A
 
 
     %% Initial conditions
     global ini
     ini.V0 = 4.0;       % Initial tension [V]
-    %ini.ce0 = 1e3;      % Initial electrolyte concentration of Li, [mol/m^3]
-    %ini.csp0 = 16792.0;% 3.45e4;  % Initial pos. electrode concentration of Li, [mol/m^3]
-    %ini.csn0 = 29866.1;%1.29e4;  % Initial neg. electrode concentration of Li, [mol/m^3]
     ini.ce0 = 1000. ;%1000 ;      % Initial electrolyte concentration of Li, [mol/m^3]
     ini.SOC = 1.;
-    ini.csp0 = p.csp_stoic_min+ (p.csp_stoic_max-p.csp_stoic_min)*(1-ini.SOC) ; %3.45e4 ;  % Initial pos. electrode concentration of Li, [mol/m^3]
-    ini.csn0 = p.csn_stoic_min+ (p.csn_stoic_max-p.csn_stoic_min)*(  ini.SOC) ; %1.29e4 ;  % Initial neg. electrode concentration of Li, [mol/m^3]
+    ini.csp0 = p.csp_stoic_min+ (p.csp_stoic_max-p.csp_stoic_min)*(1-ini.SOC) ;  % Initial pos. electrode concentration of Li, [mol/m^3]
+    ini.csn0 = p.csn_stoic_min+ (p.csn_stoic_max-p.csn_stoic_min)*(  ini.SOC) ;  % Initial neg. electrode concentration of Li, [mol/m^3]
     ini.T0 = 298.15;%1e3;       % Initial temperature, [K]
 
 
-
     % Conductivity of electrolyte
-    p.kappa_function_mode=1; %The conductivity of the electrolyte is handled as a function 1 or as a constant 0
-    p.kappa = 1; % Ionic conductivity of electrolyte [A/m/V]
-    p.kappa_eff_n = p.kappa * p.eps_e_n ^p.brug; % Ionic conductivity of electrolyte in neg. electrode [A/m/V]
-    p.kappa_eff_s = p.kappa * p.eps_e_s ^p.brug; % Ionic conductivity of electrolyte in separator electrode [A/m/V]
-    p.kappa_eff_p = p.kappa * p.eps_e_p ^p.brug; % Ionic conductivity of electrolyte in pos. electrode [A/m/V]
-    p.kappa_eff  = cat(1,p.kappa_eff_n*ones(sol.nb_cell_n,1),p.kappa_eff_s*ones(sol.nb_cell_s,1));
-    p.kappa_eff  = cat(1,p.kappa_eff,p.kappa_eff_p*ones(sol.nb_cell_p,1));
-    p.kappa_D_eff= p.kappa_eff*2* p.Rg * ini.T0/p.Faraday * (p.t_plus-1);
+    p.kappa_eff  = cat(1,ones(sol.nb_cell_n,1),ones(sol.nb_cell_s,1));
+    p.kappa_eff  = cat(1,p.kappa_eff,ones(sol.nb_cell_p,1));
+    p.kappa_D_eff= p.kappa_eff;
+
+    p.kappa_constant=0;
 
     %% Field variables allocation
 
@@ -263,16 +230,14 @@ function read_ctrl_GrNMC()
     fv.Ueq = 0.*ones(sol.nb_cell,1); % Open-circuit potential [V]
 
 
-    if p.kappa_function_mode==1
-    	fv.Ueq(1:sol.nb_cell_n) = param_functions.neg_electrode_Ueq(ini.csn0,0)* ones(sol.nb_cell_n,1);
-    	fv.Ueq(sol.nb_cell_n+sol.nb_cell_s+1:sol.nb_cell) = param_functions.pos_electrode_Ueq(ini.csp0,0)* ones(sol.nb_cell_p,1);
-    end
+    fv.Ueq(1:sol.nb_cell_n) = param_functions.neg_electrode_Ueq(ini.csn0,0)* ones(sol.nb_cell_n,1);
+    fv.Ueq(sol.nb_cell_n+sol.nb_cell_s+1:sol.nb_cell) = param_functions.pos_electrode_Ueq(ini.csp0,0)* ones(sol.nb_cell_p,1);
 
     ini.pe0 = 0.;      % Initial electrolyte electric potential, [V]
     ini.psn0 = param_functions.neg_electrode_Ueq(ini.csn0,0);      % Initial positive electrode electric potential equal to the equilibrium potential, [V]
     ini.psp0 = param_functions.pos_electrode_Ueq(ini.csp0,0);      % Initial negative electrode electric potential equal to the equilibrium potential, [V]
 
-    if deb.prints>1
+    if deb.prints>5
     	figure(268989898);
         fs = 16;
         set(gcf,'Position',[50 50 1800 1000]);     
@@ -320,16 +285,13 @@ function read_ctrl_GrNMC()
     fv.SOC_neg=ini.SOC;
     fv.SOC_pos=ini.SOC;
 
-    if p.De_function_mode==1
-    	p.De_eff = param_functions.electrolyte_diffusivity(ini.ce0) *ones(sol.nb_cell,1);
-    end
+   	p.De_eff = param_functions.electrolyte_diffusivity(ini.ce0) *ones(sol.nb_cell,1);
 
-    if p.kappa_function_mode==1
-    	p.kappa_eff = param_functions.electrolyte_conductivity(ini.ce0) *ones(sol.nb_cell,1);
-    	p.kappa_D_eff = p.kappa_eff *2* p.Rg * ini.T0/p.Faraday * (p.t_plus-1);
-    end
+   	p.kappa_eff = param_functions.electrolyte_conductivity(ini.ce0) *ones(sol.nb_cell,1);
+   	p.kappa_D_eff = p.kappa_eff *2* p.Rg * ini.T0/p.Faraday * (p.t_plus-1);
 
-
+    p.Dsn_array = param_functions.neg_electrode_diffusivity(ini.csn0) *ones(sol.nb_cell_n*(sol.part_nb_cell+1),1);
+    p.Dsp_array = param_functions.pos_electrode_diffusivity(ini.csp0) *ones(sol.nb_cell_p*(sol.part_nb_cell+1),1);
 
     %% Field variables history tables allocation
 
@@ -365,7 +327,6 @@ function read_ctrl_GrNMC()
     hist.residuals_time		= zeros(6,sol.nb_steps);
     hist.residuals_diff		= zeros(6,sol.nb_steps);
     hist.newt_it_number		= zeros(1,sol.nb_steps);
-    hist.delta_coupled		= zeros(1,(sol.nb_cell_n+sol.nb_cell_p)*(sol.part_nb_cell+1)+3*sol.nb_cell-sol.nb_cell_s);
 
     hist.sum_j_pos_electrode    = zeros(1,sol.nb_steps);
     hist.sum_j_neg_electrode    = zeros(1,sol.nb_steps);

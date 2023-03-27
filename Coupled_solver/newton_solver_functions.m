@@ -15,7 +15,7 @@ classdef newton_solver_functions
         end
 
         function [ce_next,ce_next_save,pe_next,pe_next_save,ps_next,ps_next_save,csn_next,csp_next,norm_delta_coupled,newt_ite] = ...
-                                            Newton_solver_coupled(obj,csn_next,csp_next,Dsn,Dsp,rn,...
+                                            Newton_solver_coupled(obj,csn_next,csp_next,rn,...
                                                                 rp,j,csn,csp,cse, ...
                                                                 Mn,Mp,ce_next,pe_next,ps_next,...
                                                                 kappa, sigma,dx,source_ce,...
@@ -88,13 +88,13 @@ classdef newton_solver_functions
                 newt_solv_setup_timer=tic;
                 update_dt_sources_timer=tic;
 
-                if newt_ite>=40 && mod(newt_ite,20)==0
-                    if sol.dt>=2
-                        sol.dt=floor(sol.dt/2);
-                    else
-                        sol.dt=sol.dt/2;
-                    end
-                end
+                %if newt_ite>=40 && mod(newt_ite,20)==0
+                %    if sol.dt>=2
+                %        sol.dt=floor(sol.dt/2);
+                %    else
+                %        sol.dt=sol.dt/2;
+                %    end
+                %end
 
                 %Update parameter functions and Butler-Volmer equation
                 
