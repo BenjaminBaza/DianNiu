@@ -1,4 +1,4 @@
-classdef param_functions_GrNMC
+classdef param_functions_GrLFP
     %from Dandeliion library and Chen et al. 2020
     methods
 
@@ -21,7 +21,7 @@ classdef param_functions_GrNMC
         function Dcs = pos_electrode_diffusivity(obj,c)
             global p
             x=c/p.csp_max;
-            Dcs = (3.7e-9 - 3.4e-9 * exp(-12. * (x - 0.62) * (x - 0.62)))*0.0001;
+            Dcs = (9.e-14)*0.0001;
         end
 
         function Ueqn = neg_electrode_Ueq(obj,c,i)
@@ -36,8 +36,7 @@ classdef param_functions_GrNMC
             global p
             x=c/p.csp_max;
             x=min(max(0,x),1);
-            Ueqp = -2.3521 * x - 0.074706 * tanh(31.886 * (x - 0.021992)) + 6.3498 * tanh(2.664 * (x - 0.17435)) ...
-                 - 0.64024 * tanh(5.4862 * (x - 0.43925)) - 3.8238 * tanh(4.1217 * (x - 0.17619)) - 0.054212 * tanh(18.292 * (x - 0.76227)) + 4.2329;
+            Ueqp = (3.114559 + 4.438792 * atan(-71.7352 * x + 70.85337) - 4.240252 * atan(-68.5605 * x + 67.730082));
         end
     end
 end

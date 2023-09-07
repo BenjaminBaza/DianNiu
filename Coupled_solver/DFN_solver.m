@@ -33,16 +33,23 @@ function DFN_solver()
         || ((ex.I_array(sol.time_ite)<0 && ((max(fv.SOC_neg,fv.SOC_pos)>0.995) || ((sol.max_allowed_voltage - fv.V)<0.05))))
             max_dt=sol.quick_dt;
         end
-
+        disp((sol.time_ite))
         if sol.time_ite<=20
             sol.dt=sol.quick_dt;
-        elseif sol.time_ite==21
-            sol.dt=max_dt;        
-        else
+        end
+        if sol.time_ite==21
+            sol.dt=max_dt;   
+        end     
+        
+        if sol.time_ite>21
             if sol.dt>max_dt
                 sol.dt=max_dt;
             elseif not(sol.dt==max_dt) && mod(sol.time_ite,20)==0
-                sol.dt=min(sol.dt*8,max_dt);
+                if ex.I_array(sol.time_ite+1) == 0
+                    sol.dt=min(max_dt);
+                else
+                    sol.dt=min(sol.dt*8,max_dt);
+                end
             end
         end
 
@@ -127,9 +134,11 @@ function DFN_solver()
         end
 
         if ((dV_dt<-sol.max_allowed_voltage_time_differential && fv.SOC_neg<0.2) || (dV_dt>sol.max_allowed_voltage_time_differential && fv.SOC_neg>0.8) ...
-                    || ((min(fv.SOC_neg,fv.SOC_pos)<-0.00000000001 || max(fv.SOC_neg,fv.SOC_pos)>1.00000000001) )) ...
-                    || (fv.V>sol.max_allowed_voltage || fv.V<sol.min_allowed_voltage) ...
+                    || ((min(fv.SOC_neg,fv.SOC_pos)<-0.00000000001 || max(fv.SOC_neg,fv.SOC_pos)>1.00000000001) ) ...
+                    || (fv.V>sol.max_allowed_voltage || fv.V<sol.min_allowed_voltage)) ...
                     && not(ex.I_array(sol.time_ite)==0)
+
+            cprintf('err'," Charge complete. Current intensity reduced to 0.\n")
 
             ex.I_array(sol.time_ite+1:length(sol.time_array)) = 0 ;
             hist.charge_time = sol.time ;
@@ -140,5 +149,6 @@ function DFN_solver()
         newt_chrono=toc(newt_timer);
         
     end
+    
     disp("Solver ends. Estimated charge time "+num2str(hist.charge_time)+" at ite "+num2str(hist.charge_ite));
 end

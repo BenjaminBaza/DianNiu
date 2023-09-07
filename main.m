@@ -34,8 +34,9 @@ function main()
     %%%%%%%%%%%%%%%%% Read control parameters
     read_timer=tic;
 
-    %run read_ctrl_development()
-    run read_ctrl_GrNMC()
+    run read_ctrl_development()
+    %run read_ctrl_GrLFP()
+    %run read_ctrl_GrNMC()
 
     global deb
     global hist

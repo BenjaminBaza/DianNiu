@@ -1,4 +1,4 @@
-function read_ctrl_GrNMC()
+function read_ctrl_GrLFP()
 
     %% This list of parameters is meant to simulate a cylindrical 21700 commercial cell (LGM50).
     %Ref from Chen et al. 2020 "Development of experimental techniques for parameterization"
@@ -10,30 +10,30 @@ function read_ctrl_GrNMC()
 
     %% Parameter functions class
     global param_functions
-    param_functions=param_functions_GrNMC;
+    param_functions=param_functions_GrLFP;
 
     %% Geometric characteristics
 
     % Lengths
     global p
     p.Ln = 74.e-6;     % negative electrode thickness [m]
-    p.Lp = 54.e-6;     % positive electrode thickness [m]
+    p.Lp = 62.e-6;     % positive electrode thickness [m]
     p.Ls = 20e-6;      % separator thickness [m]
     p.Ltot = p.Ln+p.Ls+p.Lp; % total cell thickness
     p.R_s_n = 13.7e-6;   % negative electrode particle radius [m]
-    p.R_s_p = 6.5e-6;   % positive electrode particle radius [m]
+    p.R_s_p = 0.05e-6;   % positive electrode particle radius [m]
 
     % Volume fractions
     p.eps_e_n = 0.329;   % negative electrode volume fraction of electrolyte 
     p.eps_e_s = 0.508;   % separator volume fraction of electrolyte 
-    p.eps_e_p = 0.296;   % negative electrode volume fraction of electrolyte 
+    p.eps_e_p = 0.4764;   % negative electrode volume fraction of electrolyte 
     p.eps_s_n = 1-p.eps_e_n ;      % negative electrode volume fraction
     p.eps_s_p = 1-p.eps_e_p ;      % positive electrode volume fraction
 
 
     % Specific interfacial surface area
-    p.coll_A_n = 0.008585; % negative electrode current collector area [m^2]
-    p.coll_A_p = 0.008585; % positive electrode current collector area [m^2]
+    p.coll_A_n = 0.0926; % negative electrode current collector area [m^2]
+    p.coll_A_p = 0.0926; % positive electrode current collector area [m^2]
     p.R_collector_contact=0;	% Current collector total contact resistance [V.A^(-1)] [Ohm]
     p.A_s_n = 3*p.eps_s_n / p.R_s_n;  % Negative electrode specific interfacial surface area [m^2/m^3]
     p.A_s_p = 3*p.eps_s_p / p.R_s_p;  % Positive electrode specific interfacial surface area [m^2/m^3]
@@ -54,13 +54,13 @@ function read_ctrl_GrNMC()
     sol.nb_steps    = 10000 ; %length(sol.time_array);    % Number of time states visited throughout the simulation
     sol.time_array  = zeros(1,sol.nb_steps) ; %sol.dt:sol.dt:sol.time_tot;  % array containing the time coordinate of each time step (may be redundant)
 
-    sol.max_allowed_voltage = 4.2 ; %[V] (Not used in the solver at the moment)
-    sol.min_allowed_voltage = 2.5 ; %[V] (Not used in the solver at the moment)
+    sol.max_allowed_voltage = 3.4 ; %[V] (Not used in the solver at the moment)
+    sol.min_allowed_voltage = 2.7 ; %[V] (Not used in the solver at the moment)
     sol.max_allowed_voltage_time_differential = 2.;
 
-    sol.nb_cell_n   = 75;%30;%50;
+    sol.nb_cell_n   = 30;%30;%50;
     sol.nb_cell_s   = 15;%20;%50;
-    sol.nb_cell_p   = 75;%30;%50;
+    sol.nb_cell_p   = 30;%30;%50;
     sol.nb_cell     = sol.nb_cell_n + sol.nb_cell_s + sol.nb_cell_p ;   %
     sol.nb_cell_ps  = sol.nb_cell_n + sol.nb_cell_p ;   %
 
@@ -86,7 +86,7 @@ function read_ctrl_GrNMC()
     sol.cell_center_coord_solid  = cat(1,sol.cell_center_coord(1:sol.nb_cell_n),sol.cell_center_coord(sol.nb_cell_n+sol.nb_cell_s+1:sol.nb_cell_n+sol.nb_cell_s+sol.nb_cell_p));
 
 
-    sol.part_nb_cell= 39;%20;
+    sol.part_nb_cell= 19;%20;
     sol.particle_mesh_distribution_order= 2.0;
     particle_mesh_generator(sol.particle_mesh_distribution_order)
 
@@ -100,7 +100,7 @@ function read_ctrl_GrNMC()
     global deb
 
     deb.prints=0;
-    deb.run_name= "GrNMC";
+    deb.run_name= "GrLFP";
     deb.plot_data=1;
     deb.animate_data=0;
     deb.break_time_loop=0;
@@ -146,11 +146,11 @@ function read_ctrl_GrNMC()
     %% Material characteristics
 
     % Constants
-    p.k0 = 1e-10 * [2.3330,0.5900] ;	% Effective reaction rates (in the negative electrode first and in the positive second) [mol^−1/2 .m^5/2 .s−1]
+    p.k0 = 1e-10 * [2.3330,0.100] ;	% Effective reaction rates (in the negative electrode first and in the positive second) [mol^−1/2 .m^5/2 .s−1]
     p.alpha	=0.5 ;			% Asymmetric charge-transfer coefficient
     p.brug = 1.5 ;       	% Bruggeman porosity
     p.t_plus_function_mode=0 ; %The transference number is handled as a function 1 or as a constant 0
-    p.t_plus = 0.26 ;       	% Transference number
+    p.t_plus = 0.3 ;       	% Transference number
     p.Faraday = 96487 ;    	% Faraday constant, [Coulumbs/mol]  [s.A/mol]  [kg.m^2.s^-2.V^-1/mol]
     p.Rg = 8.3145 ;			% Perfect gas constant [j.mol/K]  [kg.m^2.s^-2/mol/K]
     p.Rfilm	= 0 ;			% Film layer ionic resistance [Ohm.m^2]
@@ -158,11 +158,11 @@ function read_ctrl_GrNMC()
 
     % Maximum concentrations
     p.csn_max = 31920.0;    % Max concentration in anode, [mol/m^3]
-    p.csp_max = 48580.0;    % Max concentration in cathode, [mol/m^3]
+    p.csp_max = 22806.0;    % Max concentration in cathode, [mol/m^3]
     p.neg_stoichiometry_min = 0.04;	% concentration at   0% stochiometry in anode, [mol/m^3]
     p.neg_stoichiometry_max = 0.81829; % 0.75;	% concentration at 100% stochiometry in anode, [mol/m^3]
-    p.pos_stoichiometry_min = 0.26;	% concentration at 100% stochiometry in cathode, [mol/m^3]
-    p.pos_stoichiometry_max = 0.86;	% concentration at   0% stochiometry in cathode, [mol/m^3]
+    p.pos_stoichiometry_min = 0.03499956151;	% concentration at 100% stochiometry in cathode, [mol/m^3]
+    p.pos_stoichiometry_max = 1.;	% concentration at   0% stochiometry in cathode, [mol/m^3]
 
     p.csn_stoic_min = p.csn_max*p.neg_stoichiometry_min;   % concentration at 100% stochiometry in anode, [mol/m^3]
     p.csp_stoic_min = p.csp_max*p.pos_stoichiometry_min;   % concentration at   0% stochiometry in cathode, [mol/m^3]
@@ -187,7 +187,7 @@ function read_ctrl_GrNMC()
 
     % Solid phase conductivity
     p.sig_n = 14.000;    % Conductivity of solid in neg. electrode, [1/Ohm*m]=[S*m] (S=Siemens)
-    p.sig_p = 68.100;    % Conductivity of solid in pos. electrode, [1/Ohm*m]=[S*m] (S=Siemens)
+    p.sig_p = 5.000;    % Conductivity of solid in pos. electrode, [1/Ohm*m]=[S*m] (S=Siemens)
 
     p.sig_eff_n = p.sig_n * p.eps_s_n^p.brug;    % Effective conductivity in neg. electrode, [A/m/V]
     p.sig_eff_p = p.sig_p * p.eps_s_p^p.brug;    % Effective conductivity in pos. electrode, [A/m/V]
@@ -197,8 +197,7 @@ function read_ctrl_GrNMC()
 
     %% External input
     global ex
-    ex.I_array  = 0.15625 * ones(size(sol.time_array)) ; %0.15625 * ones(size(sol.time_array));%ex.temporary_Crate*ones(size(sol.time_array));  % Array containing the input current intensity at each time step (may be redundant)
-    % 1C=5A
+    ex.I_array  = 0.65 * ones(size(sol.time_array)) ; % Array containing the input current intensity at each time step (may be redundant)
 
 
     %% Initial conditions
@@ -237,7 +236,7 @@ function read_ctrl_GrNMC()
     ini.psn0 = param_functions.neg_electrode_Ueq(ini.csn0,0);      % Initial positive electrode electric potential equal to the equilibrium potential, [V]
     ini.psp0 = param_functions.pos_electrode_Ueq(ini.csp0,0);      % Initial negative electrode electric potential equal to the equilibrium potential, [V]
 
-    if deb.prints>-1
+    if deb.prints>5
     	figure(268989898);
         fs = 16;
         set(gcf,'Position',[50 50 1800 1000]);     
@@ -266,7 +265,8 @@ function read_ctrl_GrNMC()
         	diff_array(c_ind)=param_functions.electrolyte_diffusivity(c_array(c_ind));
             Dsn_array(c_ind)=param_functions.neg_electrode_diffusivity(csn_array(c_ind));
         	Dsp_array(c_ind)=param_functions.pos_electrode_diffusivity(c_array(c_ind));
-            
+            disp("fluid cond and diff solid neg diff and pos diff ")
+            disp(diff_array(c_ind))
         end
 
         subplot(3,5,[6,7])

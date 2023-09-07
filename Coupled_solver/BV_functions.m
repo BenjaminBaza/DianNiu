@@ -72,10 +72,6 @@ classdef BV_functions
 		end
 
 
-
-	
-
-
 		function j= butler_volmer_equation(obj,pe,ps,ce,cse,T,Ueq,ID)
 			global deb
 			global p
